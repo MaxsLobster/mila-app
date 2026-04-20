@@ -4,11 +4,13 @@ import { useAllPantry, addPantryItem, removePantryItem } from '../db/hooks'
 import { LOCATIONS, LOCATION_LABELS } from '../lib/pantry'
 import PantryForm from '../components/pantry/PantryForm'
 import PantryItem from '../components/pantry/PantryItem'
+import { useToast } from '../components/ui/Toast'
 
 export default function Vorrat() {
   const [activeLocation, setActiveLocation] = useState('kuehlschrank')
   const [addOpen, setAddOpen] = useState(false)
   const all = useAllPantry()
+  const toast = useToast()
 
   const counts = useMemo(() => {
     const c = { kuehlschrank: 0, freezer: 0, vorrat: 0 }
@@ -31,8 +33,13 @@ export default function Vorrat() {
 
   async function handleAdd(item) {
     await addPantryItem(item)
-    // Auto-switch tab if user adds to a different location
+    toast(`${item.name} im ${LOCATION_LABELS[item.location]}`, { tone: 'success' })
     if (item.location !== activeLocation) setActiveLocation(item.location)
+  }
+
+  async function handleRemove(id, name) {
+    await removePantryItem(id)
+    toast(`${name} entfernt`, { tone: 'info' })
   }
 
   return (
@@ -65,7 +72,6 @@ export default function Vorrat() {
         />
       )}
 
-      {/* Tabs */}
       <div className="flex gap-1 bg-white border border-black/5 rounded-xl p-1">
         {LOCATIONS.map((loc) => {
           const isActive = loc === activeLocation
@@ -92,7 +98,6 @@ export default function Vorrat() {
         })}
       </div>
 
-      {/* Items */}
       {!visible ? (
         <SkeletonList />
       ) : visible.length === 0 ? (
@@ -103,7 +108,7 @@ export default function Vorrat() {
             <PantryItem
               key={item.id}
               item={item}
-              onRemove={() => removePantryItem(item.id)}
+              onRemove={() => handleRemove(item.id, item.name)}
             />
           ))}
         </div>

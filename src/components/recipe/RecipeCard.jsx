@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Clock, Star, ChefHat } from 'lucide-react'
 import { CATEGORY_LABELS, formatTime } from '../../lib/recipe'
+import MeshGradient, { variantForCuisine } from '../ui/MeshGradient'
 
 export default function RecipeCard({ recipe }) {
   return (
@@ -8,15 +9,18 @@ export default function RecipeCard({ recipe }) {
       to={`/rezepte/${recipe.id}`}
       className="group bg-white rounded-2xl overflow-hidden border border-black/5 hover:border-terracotta/30 transition block"
     >
-      <div className="aspect-[4/3] bg-gradient-to-br from-terracotta-soft via-terracotta/20 to-sage-soft flex items-center justify-center relative">
-        <ChefHat size={36} strokeWidth={1.5} className="text-white/70" />
+      <div className="aspect-[4/3] relative">
+        <MeshGradient variant={variantForCuisine(recipe.cuisine)} animated={false} />
+        <div className="relative z-10 w-full h-full flex items-center justify-center">
+          <ChefHat size={36} strokeWidth={1.5} className="text-white/80 drop-shadow-sm" />
+        </div>
         {recipe.favorite && (
-          <div className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 backdrop-blur flex items-center justify-center">
+          <div className="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full bg-white/85 backdrop-blur flex items-center justify-center">
             <Star size={14} fill="currentColor" className="text-terracotta" />
           </div>
         )}
         {recipe.valerie_tauglich && (
-          <span className="absolute top-2.5 left-2.5 text-[10px] font-medium px-2 py-0.5 bg-sage/90 text-white rounded-full">
+          <span className="absolute top-2.5 left-2.5 z-10 text-[10px] font-medium px-2 py-0.5 bg-sage/90 text-white rounded-full">
             Valerie
           </span>
         )}

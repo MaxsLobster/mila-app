@@ -2,11 +2,14 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Star, Edit3, Trash2, ChefHat, Clock, Users, Flame, Baby } from 'lucide-react'
 import { useRecipe, toggleFavorite, deleteRecipe } from '../db/hooks'
 import { CATEGORY_LABELS, CUISINE_LABELS, DEVICE_LABELS, formatTime } from '../lib/recipe'
+import MeshGradient, { variantForCuisine } from '../components/ui/MeshGradient'
+import { useToast } from '../components/ui/Toast'
 
 export default function RezeptDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const recipe = useRecipe(id)
+  const toast = useToast()
 
   if (recipe === undefined) return <SkeletonDetail />
   if (recipe === null) return <NotFound />
@@ -14,12 +17,17 @@ export default function RezeptDetail() {
   async function handleDelete() {
     if (!confirm(`"${recipe.name}" wirklich löschen?`)) return
     await deleteRecipe(recipe.id)
+    toast(`"${recipe.name}" gelöscht`, { tone: 'info' })
     navigate('/rezepte')
+  }
+
+  async function handleFavorite() {
+    await toggleFavorite(recipe.id, recipe.favorite)
+    toast(recipe.favorite ? 'Favorit entfernt' : 'Zu Favoriten', { tone: 'success' })
   }
 
   return (
     <div className="space-y-6">
-      {/* Back */}
       <Link to="/rezepte" className="inline-flex items-center gap-1.5 text-sm text-ink/60 hover:text-ink">
         <ArrowLeft size={16} />
         Alle Rezepte
@@ -27,11 +35,14 @@ export default function RezeptDetail() {
 
       {/* Hero */}
       <div className="bg-white rounded-2xl overflow-hidden border border-black/5">
-        <div className="aspect-[16/9] bg-gradient-to-br from-terracotta-soft via-terracotta/30 to-sage-soft flex items-center justify-center relative">
-          <ChefHat size={56} strokeWidth={1.5} className="text-white/70" />
+        <div className="aspect-[16/9] relative">
+          <MeshGradient variant={variantForCuisine(recipe.cuisine)} />
+          <div className="relative z-10 w-full h-full flex items-center justify-center">
+            <ChefHat size={56} strokeWidth={1.5} className="text-white/80 drop-shadow" />
+          </div>
           <button
-            onClick={() => toggleFavorite(recipe.id, recipe.favorite)}
-            className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition"
+            onClick={handleFavorite}
+            className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition"
             aria-label={recipe.favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
           >
             <Star

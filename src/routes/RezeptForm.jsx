@@ -11,12 +11,14 @@ import {
   DEVICE_LABELS,
   emptyRecipe,
 } from '../lib/recipe'
+import { useToast } from '../components/ui/Toast'
 
 export default function RezeptForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const existing = useRecipe(id)
   const isEdit = Boolean(id)
+  const toast = useToast()
 
   const [form, setForm] = useState(() => (isEdit ? null : emptyRecipe()))
 
@@ -96,6 +98,7 @@ export default function RezeptForm() {
       steps: form.steps.map((s) => s.trim()).filter(Boolean),
     }
     await saveRecipe(cleaned)
+    toast(isEdit ? 'Rezept aktualisiert' : 'Rezept angelegt', { tone: 'success' })
     navigate(`/rezepte/${cleaned.id}`)
   }
 
@@ -118,7 +121,6 @@ export default function RezeptForm() {
         </h1>
       </header>
 
-      {/* Basics */}
       <Section title="Basics">
         <Field label="Name">
           <input
@@ -173,7 +175,6 @@ export default function RezeptForm() {
         </label>
       </Section>
 
-      {/* Devices */}
       <Section title="Geräte">
         <div className="flex flex-wrap gap-2">
           {DEVICES.map((d) => {
@@ -196,7 +197,6 @@ export default function RezeptForm() {
         </div>
       </Section>
 
-      {/* Ingredients */}
       <Section title="Zutaten" action={<AddButton onClick={addIngredient} />}>
         <div className="space-y-2">
           {form.ingredients.map((ing, i) => (
@@ -246,7 +246,6 @@ export default function RezeptForm() {
         </div>
       </Section>
 
-      {/* Steps */}
       <Section title="Schritte" action={<AddButton onClick={addStep} />}>
         <div className="space-y-2">
           {form.steps.map((step, i) => (
@@ -274,7 +273,6 @@ export default function RezeptForm() {
         </div>
       </Section>
 
-      {/* Notes */}
       <Section title="Notizen">
         <textarea
           value={form.notes}
@@ -285,7 +283,6 @@ export default function RezeptForm() {
         />
       </Section>
 
-      {/* Actions */}
       <div className="flex gap-2 sticky bottom-20 md:bottom-6 z-30 pt-2">
         <button
           type="submit"

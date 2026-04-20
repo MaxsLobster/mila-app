@@ -5,6 +5,7 @@ import { formatTime } from '../lib/recipe'
 import { DAY_LABELS_LONG } from '../lib/date'
 import { DAY_MODES } from '../lib/mealplan'
 import { LOCATION_LABELS, expiryTone, formatExpiry, toneClasses } from '../lib/pantry'
+import MeshGradient, { variantForCuisine } from '../components/ui/MeshGradient'
 
 export default function Home() {
   const now = new Date()
@@ -69,7 +70,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* Vorrat-Check (echt, max 3 items, nur wenn Pantry nicht leer) */}
+      {/* Vorrat-Check */}
       {expiring !== null && expiring.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
@@ -150,8 +151,11 @@ export default function Home() {
 function TodayCard({ recipe, slotLabel }) {
   return (
     <article className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-      <div className="aspect-[16/9] bg-gradient-to-br from-terracotta-soft via-terracotta/30 to-sage-soft flex items-center justify-center">
-        <ChefHat size={56} strokeWidth={1.5} className="text-white/70" />
+      <div className="aspect-[16/9] relative">
+        <MeshGradient variant={variantForCuisine(recipe.cuisine)} />
+        <div className="relative z-10 w-full h-full flex items-center justify-center">
+          <ChefHat size={56} strokeWidth={1.5} className="text-white/80 drop-shadow" />
+        </div>
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">

@@ -19,11 +19,12 @@ import {
   parseManualInput,
   generateFromWeekplan,
 } from '../lib/shopping'
+import { useToast } from '../components/ui/Toast'
 
 export default function Einkauf() {
   const items = useShoppingItems()
   const [newItem, setNewItem] = useState('')
-  const [feedback, setFeedback] = useState(null)
+  const toast = useToast()
 
   const weekKey = formatWeekKey(getISOWeek(new Date()))
   const plan = useMealplan(weekKey)
@@ -64,26 +65,20 @@ export default function Einkauf() {
   async function handleGenerate() {
     const generated = generateFromWeekplan(plan, recipesById)
     if (generated.length === 0) {
-      showFeedback('Kein Rezept in dieser Woche – plane erst einen Tag.', 'info')
+      toast('Kein Rezept diese Woche – plane erst einen Tag.', { tone: 'info' })
       return
     }
     const added = await addShoppingItems(generated)
-    showFeedback(
-      added > 0
-        ? `${added} Artikel aus dem Wochenplan hinzugefügt`
-        : 'Alles schon auf der Liste',
-      added > 0 ? 'success' : 'info'
+    toast(
+      added > 0 ? `${added} Artikel aus dem Wochenplan` : 'Alles schon auf der Liste',
+      { tone: added > 0 ? 'success' : 'info' }
     )
   }
 
   async function handleClearChecked() {
     if (!confirm(`${checkedCount} abgehakte Artikel löschen?`)) return
     await clearCheckedShopping()
-  }
-
-  function showFeedback(text, tone = 'success') {
-    setFeedback({ text, tone })
-    setTimeout(() => setFeedback(null), 2500)
+    toast(`${checkedCount} Artikel entfernt`, { tone: 'success' })
   }
 
   const hasAny = items && items.length > 0
@@ -97,7 +92,6 @@ export default function Einkauf() {
         <h1 className="text-[32px] md:text-4xl font-semibold tracking-tight mt-1 leading-none">Einkauf</h1>
       </header>
 
-      {/* Quick add */}
       <form onSubmit={handleAdd} className="flex gap-2">
         <input
           type="text"
@@ -116,7 +110,6 @@ export default function Einkauf() {
         </button>
       </form>
 
-      {/* Actions */}
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleGenerate}
@@ -137,19 +130,6 @@ export default function Einkauf() {
         )}
       </div>
 
-      {feedback && (
-        <div
-          className={`px-4 py-3 rounded-xl text-sm border ${
-            feedback.tone === 'success'
-              ? 'bg-sage/15 border-sage/30 text-ink'
-              : 'bg-amber-50 border-amber-200 text-amber-900'
-          }`}
-        >
-          {feedback.text}
-        </div>
-      )}
-
-      {/* Groups */}
       {!grouped ? (
         <SkeletonList />
       ) : !hasAny ? (
