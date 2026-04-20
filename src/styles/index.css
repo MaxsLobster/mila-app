@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
+
+  --color-cream: #FAF7F2;
+  --color-ink: #2A2A2A;
+  --color-terracotta: #C87D5A;
+  --color-terracotta-soft: #F0DBCF;
+  --color-sage: #A3B18A;
+  --color-sage-soft: #D8DFCA;
+  --color-ink-dark: #1F1F1F;
+  --color-paper-dark: #F0F0F0;
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+html {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-theme="dark"] {
+  background-color: var(--color-ink-dark);
+  color: var(--color-paper-dark);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01';
+  min-height: 100dvh;
+}
+
+/* Smooth focus rings */
+*:focus-visible {
+  outline: 2px solid var(--color-terracotta);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Hide scrollbars in nav areas but keep functional */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { scrollbar-width: none; }
