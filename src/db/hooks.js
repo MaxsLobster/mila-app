@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './schema'
 import { getISOWeek, formatWeekKey, dayKeyForDate } from '../lib/date'
+import { categorize } from '../lib/shopping'
 
 /* ───────────────────────── Recipes ───────────────────────── */
 
@@ -74,4 +75,50 @@ export async function clearMealplanSlot(weekKey, dayKey, slot) {
   const updated = { ...day }
   delete updated[slot]
   await db.mealplan.put({ week: weekKey, days: { ...existing.days, [dayKey]: updated } })
+}
+
+/* ───────────────────────── Shopping ───────────────────────── */
+
+export function useShoppingItems() {
+  const items = useLiveQuery(() => db.shopping.toArray(), [])
+  return items ?? null
+}
+
+export async function addShoppingItem(partial) {
+  const item = {
+    id: crypto.randomUUID(),
+    name: (partial.name ?? '').trim(),
+    amount: (partial.amount ?? '').trim(),
+    category: partial.category ?? categorize(partial.name ?? ''),
+    source: partial.source ?? 'manual',
+    recipe_id: partial.recipe_id ?? null,
+    checked: false,
+    added: new Date().toISOString(),
+  }
+  if (!item.name) return null
+  await db.shopping.add(item)
+  return item
+}
+
+export async function addShoppingItems(items) {
+  const existing = await db.shopping.toArray()
+  const existingNames = new Set(existing.map((i) => i.name.trim().toLowerCase()))
+  const newItems = items.filter((i) => !existingNames.has(i.name.trim().toLowerCase()))
+  if (newItems.length > 0) await db.shopping.bulkAdd(newItems)
+  return newItems.length
+}
+
+export async function toggleShoppingItem(id, checked) {
+  await db.shopping.update(id, { checked })
+}
+
+export async function removeShoppingItem(id) {
+  await db.shopping.delete(id)
+}
+
+export async function clearCheckedShopping() {
+  const all = await db.shopping.toArray()
+  const checkedIds = all.filter((i) => i.checked).map((i) => i.id)
+  if (checkedIds.length > 0) await db.shopping.bulkDelete(checkedIds)
+  return checkedIds.length
 }

@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Clock, ChefHat, ShoppingCart, Sparkles, Moon, Calendar } from 'lucide-react'
-import { useTodayMealplan, useRecipe } from '../db/hooks'
+import { useTodayMealplan, useRecipe, useShoppingItems } from '../db/hooks'
 import { formatTime } from '../lib/recipe'
 import { DAY_LABELS_LONG } from '../lib/date'
 import { DAY_MODES } from '../lib/mealplan'
-import { pantryExpiring, shoppingOpen } from '../mock/today'
+import { pantryExpiring } from '../mock/today'
 
 export default function Home() {
   const now = new Date()
@@ -12,10 +12,13 @@ export default function Home() {
   const today = useTodayMealplan()
   const mittag = useRecipe(today.day?.mittag)
   const abend = useRecipe(today.day?.abend)
+  const shopping = useShoppingItems()
 
-  // Pick primary (mittag preferred, fallback abend)
   const primary = mittag || abend
   const secondary = mittag && abend ? abend : null
+
+  const openShopping = shopping?.filter((i) => !i.checked) ?? []
+  const shoppingPreview = openShopping.slice(0, 3).map((i) => i.name).join(', ')
 
   return (
     <div className="space-y-7">
@@ -43,14 +46,11 @@ export default function Home() {
           <div className="bg-white rounded-2xl border border-black/5 aspect-[16/10] animate-pulse" />
         ) : primary ? (
           <>
-            <TodayCard
-              recipe={primary}
-              slotLabel={mittag ? 'Mittag' : 'Abend'}
-            />
+            <TodayCard recipe={primary} slotLabel={mittag ? 'Mittag' : 'Abend'} />
             {secondary && (
               <Link
                 to={`/rezepte/${secondary.id}`}
-                className="mt-2 w-full bg-white rounded-2xl p-4 border border-black/5 flex items-center gap-3 hover:border-terracotta/30 transition group"
+                className="mt-2 w-full bg-white rounded-2xl p-4 border border-black/5 flex items-center gap-3 hover:border-terracotta/30 transition"
               >
                 <div className="w-10 h-10 rounded-xl bg-sage/15 flex items-center justify-center shrink-0">
                   <Moon size={17} className="text-sage" strokeWidth={2} />
@@ -93,7 +93,7 @@ export default function Home() {
         <p className="text-xs text-ink/35 mt-2 px-1">Mock-Daten – echter Vorrat in M5.</p>
       </section>
 
-      {/* Einkaufsliste (mock bis M4) */}
+      {/* Einkaufsliste */}
       <section>
         <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">
           Noch einzukaufen
@@ -106,8 +106,17 @@ export default function Home() {
             <ShoppingCart size={20} className="text-terracotta" strokeWidth={2} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium">{shoppingOpen.count} Artikel offen</p>
-            <p className="text-sm text-ink/55 truncate">{shoppingOpen.preview}</p>
+            {openShopping.length > 0 ? (
+              <>
+                <p className="font-medium">{openShopping.length} Artikel offen</p>
+                <p className="text-sm text-ink/55 truncate">{shoppingPreview}{openShopping.length > 3 ? ' …' : ''}</p>
+              </>
+            ) : (
+              <>
+                <p className="font-medium">Alles besorgt</p>
+                <p className="text-sm text-ink/55 truncate">Tipp für neue Artikel oder aus Wochenplan</p>
+              </>
+            )}
           </div>
           <span className="text-ink/30 text-xl leading-none">›</span>
         </Link>
