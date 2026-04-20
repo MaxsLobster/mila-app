@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Clock, ChefHat, ShoppingCart, Sparkles, Moon, Calendar } from 'lucide-react'
-import { useTodayMealplan, useRecipe, useShoppingItems } from '../db/hooks'
+import { useTodayMealplan, useRecipe, useShoppingItems, usePantryExpiring } from '../db/hooks'
 import { formatTime } from '../lib/recipe'
 import { DAY_LABELS_LONG } from '../lib/date'
 import { DAY_MODES } from '../lib/mealplan'
-import { pantryExpiring } from '../mock/today'
+import { LOCATION_LABELS, expiryTone, formatExpiry, toneClasses } from '../lib/pantry'
 
 export default function Home() {
   const now = new Date()
@@ -13,6 +13,7 @@ export default function Home() {
   const mittag = useRecipe(today.day?.mittag)
   const abend = useRecipe(today.day?.abend)
   const shopping = useShoppingItems()
+  const expiring = usePantryExpiring(14)
 
   const primary = mittag || abend
   const secondary = mittag && abend ? abend : null
@@ -68,30 +69,38 @@ export default function Home() {
         )}
       </section>
 
-      {/* Vorrat-Check (mock bis M5) */}
-      <section>
-        <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">
-          Vorrat-Check
-        </h2>
-        <div className="bg-white rounded-2xl border border-black/5 divide-y divide-black/5 overflow-hidden">
-          {pantryExpiring.map((item) => (
-            <div key={item.id} className="flex items-center justify-between px-5 py-3.5">
-              <div className="min-w-0">
-                <p className="font-medium leading-tight">{item.name}</p>
-                <p className="text-xs text-ink/50 mt-0.5">{item.location} · {item.amount}</p>
-              </div>
-              <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0 ${
-                item.daysLeft <= 2 ? 'bg-red-100 text-red-700'
-                  : item.daysLeft <= 5 ? 'bg-amber-100 text-amber-800'
-                  : 'bg-sage/20 text-ink/70'
-              }`}>
-                in {item.daysLeft} {item.daysLeft === 1 ? 'Tag' : 'Tagen'}
-              </span>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-ink/35 mt-2 px-1">Mock-Daten – echter Vorrat in M5.</p>
-      </section>
+      {/* Vorrat-Check (echt, max 3 items, nur wenn Pantry nicht leer) */}
+      {expiring !== null && expiring.length > 0 && (
+        <section>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold">
+              Vorrat-Check
+            </h2>
+            <Link to="/vorrat" className="text-[11px] text-ink/40 hover:text-terracotta transition">
+              Alle →
+            </Link>
+          </div>
+          <div className="bg-white rounded-2xl border border-black/5 divide-y divide-black/5 overflow-hidden">
+            {expiring.slice(0, 3).map((item) => {
+              const tone = expiryTone(item.daysLeft)
+              return (
+                <div key={item.id} className="flex items-center justify-between px-5 py-3.5">
+                  <div className="min-w-0">
+                    <p className="font-medium leading-tight truncate">{item.name}</p>
+                    <p className="text-xs text-ink/50 mt-0.5">
+                      {LOCATION_LABELS[item.location]}
+                      {(item.amount || item.unit) && ` · ${[item.amount, item.unit].filter(Boolean).join(' ')}`}
+                    </p>
+                  </div>
+                  <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0 ${toneClasses(tone)}`}>
+                    {formatExpiry(item.daysLeft)}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Einkaufsliste */}
       <section>

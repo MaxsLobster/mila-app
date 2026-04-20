@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './schema'
 import { getISOWeek, formatWeekKey, dayKeyForDate } from '../lib/date'
 import { categorize } from '../lib/shopping'
+import { daysUntil } from '../lib/pantry'
 
 /* ───────────────────────── Recipes ───────────────────────── */
 
@@ -121,4 +122,46 @@ export async function clearCheckedShopping() {
   const checkedIds = all.filter((i) => i.checked).map((i) => i.id)
   if (checkedIds.length > 0) await db.shopping.bulkDelete(checkedIds)
   return checkedIds.length
+}
+
+/* ───────────────────────── Pantry ───────────────────────── */
+
+export function useAllPantry() {
+  const items = useLiveQuery(() => db.pantry.toArray(), [])
+  return items ?? null
+}
+
+export function usePantryExpiring(maxDays = 14) {
+  const items = useLiveQuery(async () => {
+    const all = await db.pantry.toArray()
+    return all
+      .map((i) => ({ ...i, daysLeft: daysUntil(i.expires) }))
+      .filter((i) => i.daysLeft !== null && i.daysLeft <= maxDays)
+      .sort((a, b) => a.daysLeft - b.daysLeft)
+  }, [maxDays])
+  return items ?? null
+}
+
+export async function addPantryItem(partial) {
+  const item = {
+    id: crypto.randomUUID(),
+    name: (partial.name ?? '').trim(),
+    location: partial.location,
+    amount: (partial.amount ?? '').trim(),
+    unit: (partial.unit ?? '').trim(),
+    expires: partial.expires || null,
+    added: new Date().toISOString(),
+    category: partial.category ?? null,
+  }
+  if (!item.name || !item.location) return null
+  await db.pantry.add(item)
+  return item
+}
+
+export async function updatePantryItem(id, changes) {
+  await db.pantry.update(id, changes)
+}
+
+export async function removePantryItem(id) {
+  await db.pantry.delete(id)
 }
