@@ -4,6 +4,7 @@ import { useRecipe, toggleFavorite, deleteRecipe } from '../db/hooks'
 import { CATEGORY_LABELS, CUISINE_LABELS, DEVICE_LABELS, formatTime } from '../lib/recipe'
 import MeshGradient, { variantForCuisine } from '../components/ui/MeshGradient'
 import { useToast } from '../components/ui/Toast'
+import { heroTransitionName, titleTransitionName } from '../lib/transition'
 
 export default function RezeptDetail() {
   const { id } = useParams()
@@ -34,9 +35,12 @@ export default function RezeptDetail() {
       </Link>
 
       {/* Hero */}
-      <div className="bg-white rounded-2xl overflow-hidden border border-black/5">
-        <div className="aspect-[16/9] relative">
-          <MeshGradient variant={variantForCuisine(recipe.cuisine)} />
+      <div className="bg-white rounded-2xl overflow-hidden border border-black/5" data-mesh-host>
+        <div
+          className="aspect-[16/9] relative"
+          style={{ viewTransitionName: heroTransitionName(recipe.id) }}
+        >
+          <MeshGradient variant={variantForCuisine(recipe.cuisine)} animated interactive />
           <div className="relative z-10 w-full h-full flex items-center justify-center">
             <ChefHat size={56} strokeWidth={1.5} className="text-white/80 drop-shadow" />
           </div>
@@ -65,7 +69,12 @@ export default function RezeptDetail() {
                 </Badge>
               )}
             </div>
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight leading-tight">{recipe.name}</h1>
+            <h1
+              className="text-2xl md:text-3xl font-semibold tracking-tight leading-tight"
+              style={{ viewTransitionName: titleTransitionName(recipe.id) }}
+            >
+              {recipe.name}
+            </h1>
           </div>
 
           <div className="flex flex-wrap gap-4 text-sm text-ink/65">

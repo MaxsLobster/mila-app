@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Clock, ChefHat, ShoppingCart, Sparkles, Moon, Calendar } from 'lucide-react'
 import { useTodayMealplan, useRecipe, useShoppingItems, usePantryExpiring } from '../db/hooks'
 import { formatTime } from '../lib/recipe'
@@ -6,6 +6,7 @@ import { DAY_LABELS_LONG } from '../lib/date'
 import { DAY_MODES } from '../lib/mealplan'
 import { LOCATION_LABELS, expiryTone, formatExpiry, toneClasses } from '../lib/pantry'
 import MeshGradient, { variantForCuisine } from '../components/ui/MeshGradient'
+import { navigateWithTransition, heroTransitionName, titleTransitionName } from '../lib/transition'
 
 export default function Home() {
   const now = new Date()
@@ -149,19 +150,36 @@ export default function Home() {
 }
 
 function TodayCard({ recipe, slotLabel }) {
+  const navigate = useNavigate()
+
+  function openRecipe(e) {
+    e.preventDefault()
+    navigateWithTransition(navigate, `/rezepte/${recipe.id}`)
+  }
+
   return (
-    <article className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-      <div className="aspect-[16/9] relative">
-        <MeshGradient variant={variantForCuisine(recipe.cuisine)} />
-        <div className="relative z-10 w-full h-full flex items-center justify-center">
-          <ChefHat size={56} strokeWidth={1.5} className="text-white/80 drop-shadow" />
+    <article className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]" data-mesh-host>
+      <a href={`#/rezepte/${recipe.id}`} onClick={openRecipe} className="block">
+        <div
+          className="aspect-[16/9] relative"
+          style={{ viewTransitionName: heroTransitionName(recipe.id) }}
+        >
+          <MeshGradient variant={variantForCuisine(recipe.cuisine)} animated interactive />
+          <div className="relative z-10 w-full h-full flex items-center justify-center">
+            <ChefHat size={56} strokeWidth={1.5} className="text-white/80 drop-shadow" />
+          </div>
         </div>
-      </div>
+      </a>
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-wider font-semibold text-ink/45 mb-1">{slotLabel}</p>
-            <h3 className="text-xl font-semibold leading-tight">{recipe.name}</h3>
+            <h3
+              className="text-xl font-semibold leading-tight"
+              style={{ viewTransitionName: titleTransitionName(recipe.id) }}
+            >
+              {recipe.name}
+            </h3>
             <div className="flex items-center gap-2 mt-2 text-sm text-ink/55">
               <Clock size={14} strokeWidth={2.2} />
               <span>{formatTime(recipe.time_min)}</span>
@@ -176,12 +194,13 @@ function TodayCard({ recipe, slotLabel }) {
           )}
         </div>
         <div className="flex gap-2 mt-5">
-          <Link
-            to={`/rezepte/${recipe.id}`}
+          <a
+            href={`#/rezepte/${recipe.id}`}
+            onClick={openRecipe}
             className="flex-1 bg-terracotta text-cream font-medium py-3 rounded-xl hover:brightness-95 transition text-center"
           >
             Rezept anzeigen
-          </Link>
+          </a>
           <Link
             to={`/rezepte/${recipe.id}/kochen`}
             className="px-4 py-3 border border-black/10 rounded-xl hover:bg-black/[0.03] transition text-sm font-medium text-ink/75"
