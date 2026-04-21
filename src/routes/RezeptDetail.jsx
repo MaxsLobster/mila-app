@@ -1,8 +1,8 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Star, Edit3, Trash2, ChefHat, Clock, Users, Flame, Baby } from 'lucide-react'
+import { ArrowLeft, Star, Edit3, Trash2, Clock, Users, Flame, Baby } from 'lucide-react'
 import { useRecipe, toggleFavorite, deleteRecipe } from '../db/hooks'
 import { CATEGORY_LABELS, CUISINE_LABELS, DEVICE_LABELS, formatTime } from '../lib/recipe'
-import MeshGradient, { variantForCuisine } from '../components/ui/MeshGradient'
+import FluidMesh from '../components/ui/FluidMesh'
 import { useToast } from '../components/ui/Toast'
 import { heroTransitionName, titleTransitionName } from '../lib/transition'
 
@@ -34,16 +34,12 @@ export default function RezeptDetail() {
         Alle Rezepte
       </Link>
 
-      {/* Hero */}
-      <div className="bg-white rounded-2xl overflow-hidden border border-black/5" data-mesh-host>
+      <div className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-[0_8px_32px_rgba(0,0,0,0.06)]">
         <div
           className="aspect-[16/9] relative"
           style={{ viewTransitionName: heroTransitionName(recipe.id) }}
         >
-          <MeshGradient variant={variantForCuisine(recipe.cuisine)} animated interactive />
-          <div className="relative z-10 w-full h-full flex items-center justify-center">
-            <ChefHat size={56} strokeWidth={1.5} className="text-white/80 drop-shadow" />
-          </div>
+          <FluidMesh variant={recipe.cuisine} interactive intensity={1.2} />
           <button
             onClick={handleFavorite}
             className="absolute top-3 right-3 z-20 w-10 h-10 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition"
@@ -113,7 +109,6 @@ export default function RezeptDetail() {
         </div>
       </div>
 
-      {/* Ingredients */}
       <section>
         <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">
           Zutaten <span className="text-ink/30 normal-case font-normal">· für {recipe.portions} Portionen</span>
@@ -133,7 +128,6 @@ export default function RezeptDetail() {
         )}
       </section>
 
-      {/* Steps */}
       <section>
         <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">
           Schritte
@@ -150,7 +144,6 @@ export default function RezeptDetail() {
         </ol>
       </section>
 
-      {/* Notes */}
       {recipe.notes && (
         <section>
           <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">

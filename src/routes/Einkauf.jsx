@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plus, Trash2, Sparkles, BookOpen, ShoppingCart } from 'lucide-react'
 import {
@@ -20,6 +20,7 @@ import {
   generateFromWeekplan,
 } from '../lib/shopping'
 import { useToast } from '../components/ui/Toast'
+import { explodeElement } from '../lib/physicsExplosion'
 
 export default function Einkauf() {
   const items = useShoppingItems()
@@ -176,8 +177,16 @@ function CategorySection({ category, items, onToggle, onRemove }) {
 }
 
 function ShoppingItem({ item, onToggle, onRemove }) {
+  const rowRef = useRef(null)
+
+  async function handleRemove() {
+    const el = rowRef.current
+    if (el) await explodeElement(el, { shards: false, gravity: 1.4 })
+    onRemove()
+  }
+
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 ${item.checked ? 'opacity-50' : ''}`}>
+    <div ref={rowRef} className={`flex items-center gap-3 px-4 py-3 bg-white ${item.checked ? 'opacity-50' : ''}`}>
       <button
         onClick={onToggle}
         className={`w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center transition ${
@@ -210,7 +219,7 @@ function ShoppingItem({ item, onToggle, onRemove }) {
       </div>
 
       <button
-        onClick={onRemove}
+        onClick={handleRemove}
         className="p-1.5 text-ink/30 hover:text-red-600 transition"
         aria-label="Löschen"
       >

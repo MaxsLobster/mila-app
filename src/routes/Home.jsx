@@ -1,11 +1,11 @@
 import { useNavigate, Link } from 'react-router-dom'
-import { Clock, ChefHat, ShoppingCart, Sparkles, Moon, Calendar } from 'lucide-react'
+import { Clock, ShoppingCart, Sparkles, Moon, Calendar } from 'lucide-react'
 import { useTodayMealplan, useRecipe, useShoppingItems, usePantryExpiring } from '../db/hooks'
 import { formatTime } from '../lib/recipe'
 import { DAY_LABELS_LONG } from '../lib/date'
 import { DAY_MODES } from '../lib/mealplan'
 import { LOCATION_LABELS, expiryTone, formatExpiry, toneClasses } from '../lib/pantry'
-import MeshGradient, { variantForCuisine } from '../components/ui/MeshGradient'
+import FluidMesh from '../components/ui/FluidMesh'
 import { navigateWithTransition, heroTransitionName, titleTransitionName } from '../lib/transition'
 
 export default function Home() {
@@ -71,7 +71,6 @@ export default function Home() {
         )}
       </section>
 
-      {/* Vorrat-Check */}
       {expiring !== null && expiring.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-3 px-1">
@@ -104,7 +103,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* Einkaufsliste */}
       <section>
         <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">
           Noch einzukaufen
@@ -133,7 +131,6 @@ export default function Home() {
         </Link>
       </section>
 
-      {/* Freestyle */}
       <section>
         <button className="w-full bg-gradient-to-br from-terracotta/8 to-sage/10 rounded-2xl p-5 border border-terracotta/15 flex items-center gap-4 hover:from-terracotta/12 hover:to-sage/14 transition text-left">
           <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">
@@ -158,16 +155,13 @@ function TodayCard({ recipe, slotLabel }) {
   }
 
   return (
-    <article className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]" data-mesh-host>
+    <article className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
       <a href={`#/rezepte/${recipe.id}`} onClick={openRecipe} className="block">
         <div
           className="aspect-[16/9] relative"
           style={{ viewTransitionName: heroTransitionName(recipe.id) }}
         >
-          <MeshGradient variant={variantForCuisine(recipe.cuisine)} animated interactive />
-          <div className="relative z-10 w-full h-full flex items-center justify-center">
-            <ChefHat size={56} strokeWidth={1.5} className="text-white/80 drop-shadow" />
-          </div>
+          <FluidMesh variant={recipe.cuisine} interactive intensity={1.1} />
         </div>
       </a>
       <div className="p-5">

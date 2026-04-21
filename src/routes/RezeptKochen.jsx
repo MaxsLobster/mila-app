@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { X, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import { useRecipe, incrementCookCount } from '../db/hooks'
-import MeshGradient, { variantForCuisine } from '../components/ui/MeshGradient'
+import FluidMesh, { FLUID_PALETTES } from '../components/ui/FluidMesh'
 
 export default function RezeptKochen() {
   const { id } = useParams()
@@ -48,13 +48,12 @@ export default function RezeptKochen() {
 
   return (
     <div className="min-h-[100dvh] relative overflow-hidden text-paper-dark flex flex-col">
-      {/* Ambient hearth background */}
-      <div className="absolute inset-0 z-0 opacity-50">
-        <MeshGradient variant={variantForCuisine(recipe.cuisine)} animated timeAware={false} />
+      {/* Ambient fluid background in hearth palette */}
+      <div className="absolute inset-0 z-0">
+        <FluidMesh colors={FLUID_PALETTES.hearth} interactive intensity={0.55} />
       </div>
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-[#161615]/40 via-[#161615]/70 to-[#161615]" />
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/20 via-black/45 to-black/70" />
 
-      {/* Top bar */}
       <div className="relative z-10 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-4">
         <button
           onClick={() => navigate(`/rezepte/${recipe.id}`)}
@@ -70,7 +69,6 @@ export default function RezeptKochen() {
         <div className="w-10" />
       </div>
 
-      {/* Progress */}
       <div className="relative z-10 px-5">
         <div className="h-1 bg-white/10 rounded-full overflow-hidden backdrop-blur">
           <div
@@ -83,7 +81,6 @@ export default function RezeptKochen() {
         </p>
       </div>
 
-      {/* Step content */}
       <div key={step} className="relative z-10 flex-1 flex items-center justify-center px-6 py-10 animate-[step-in_0.5s_cubic-bezier(0.2,0.8,0.3,1)]">
         <div className="max-w-2xl w-full">
           <div className="relative w-16 h-16 rounded-2xl bg-terracotta/25 backdrop-blur text-terracotta flex items-center justify-center text-2xl font-bold mb-6 tabular-nums border border-terracotta/30">
@@ -101,7 +98,6 @@ export default function RezeptKochen() {
         </div>
       </div>
 
-      {/* Controls */}
       <div className="relative z-10 flex gap-3 px-5 pb-[max(env(safe-area-inset-bottom),1.5rem)]">
         <button
           onClick={() => setStep((s) => Math.max(0, s - 1))}

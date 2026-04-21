@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { X, Search, Clock } from 'lucide-react'
 import { useAllRecipes } from '../../db/hooks'
 import { CATEGORY_LABELS, formatTime } from '../../lib/recipe'
-import MeshGradient, { variantForCuisine } from '../ui/MeshGradient'
+import RecipeArt from '../ui/RecipeArt'
 
 export default function RecipePicker({ open, onClose, onSelect, title = 'Rezept auswählen' }) {
   const recipes = useAllRecipes()
@@ -72,7 +72,7 @@ export default function RecipePicker({ open, onClose, onSelect, title = 'Rezept 
               className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white active:bg-white transition text-left"
             >
               <div className="w-11 h-11 rounded-xl overflow-hidden relative shrink-0">
-                <MeshGradient variant={variantForCuisine(r.cuisine)} animated={false} />
+                <RecipeArt recipe={r} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium leading-tight truncate">{r.name}</p>
