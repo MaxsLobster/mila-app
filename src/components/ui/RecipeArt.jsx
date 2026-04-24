@@ -1,31 +1,27 @@
 import { useEffect, useRef } from 'react'
+import { illustrationFor } from './RecipeIllustration'
+
+/**
+ * Primary recipe artwork. If the recipe has a hand-crafted SVG illustration
+ * (most seed recipes do), render that. Otherwise fall back to a procedurally
+ * generated canvas composition derived from the recipe's name/cuisine.
+ */
 
 const PALETTES = {
-  italienisch: {
-    bg: '#F0DBCF',
-    palette: ['#8B1E3F', '#E89B6B', '#3E5A3C', '#C87D5A', '#F4E4C1'],
-    style: 'fields',          // wavy color fields (pasta sauce vibe)
-  },
-  asiatisch: {
-    bg: '#F5E9D5',
-    palette: ['#2B5D4A', '#E8A835', '#C44735', '#C87D5A', '#1F3A2E'],
-    style: 'botanical',       // leaves, brushstrokes
-  },
-  levante: {
-    bg: '#F4E4C1',
-    palette: ['#C44735', '#E8A835', '#8B1E3F', '#3E5A3C', '#D4A67C'],
-    style: 'tile',            // mosaic / geometric tiles
-  },
-  mediterran: {
-    bg: '#F5E9D5',
-    palette: ['#2E5C7B', '#5A7A8F', '#E89B6B', '#3E5A3C', '#C4B087'],
-    style: 'waves',           // sea waves, layered
-  },
-  fusion: {
-    bg: '#F0DBCF',
-    palette: ['#8B1E3F', '#2B5D4A', '#E8A835', '#9E8CA8', '#C87D5A'],
-    style: 'fields',
-  },
+  italienisch:   { bg: '#F0DBCF', palette: ['#8B1E3F', '#E89B6B', '#3E5A3C', '#C87D5A', '#F4E4C1'], style: 'fields' },
+  asiatisch:     { bg: '#F5E9D5', palette: ['#2B5D4A', '#E8A835', '#C44735', '#C87D5A', '#1F3A2E'], style: 'botanical' },
+  japanisch:     { bg: '#F5EDD8', palette: ['#C94F4F', '#3E5A3C', '#E8C197', '#1F3A2E', '#8B1E3F'], style: 'botanical' },
+  vietnamesisch: { bg: '#F5F0E0', palette: ['#7DB56E', '#E89B91', '#D4BC7C', '#3E5A3C', '#C44735'], style: 'waves' },
+  chinesisch:    { bg: '#F4E4C1', palette: ['#B73939', '#E8A835', '#1F3A2E', '#5A2E20', '#F2DF80'], style: 'fields' },
+  koreanisch:    { bg: '#F5E9D5', palette: ['#D4564F', '#E8C197', '#5A7A47', '#7A3E2F', '#F2DF80'], style: 'fields' },
+  thailaendisch: { bg: '#F0DBCF', palette: ['#C44735', '#E8A835', '#7DB56E', '#3E5A3C', '#F5EDD8'], style: 'botanical' },
+  indisch:       { bg: '#F4E4C1', palette: ['#E89735', '#C44735', '#C4A55A', '#5A7A47', '#8B3E2F'], style: 'fields' },
+  levante:       { bg: '#F4E4C1', palette: ['#C44735', '#E8A835', '#8B1E3F', '#3E5A3C', '#D4A67C'], style: 'tile' },
+  mediterran:    { bg: '#F5E9D5', palette: ['#2E5C7B', '#5A7A8F', '#E89B6B', '#3E5A3C', '#C4B087'], style: 'waves' },
+  griechisch:    { bg: '#F5F0E0', palette: ['#5A8FBA', '#2E5C7B', '#E8A77C', '#3E5A3C', '#F5EDD8'], style: 'waves' },
+  franzoesisch:  { bg: '#F5E9D5', palette: ['#6B2E3E', '#D4A76A', '#3E3A52', '#A3B18A', '#E8D5AB'], style: 'fields' },
+  amerikanisch:  { bg: '#F4E4C1', palette: ['#7A3E2F', '#C87D5A', '#E8C197', '#2A1F1A', '#D4A76A'], style: 'fields' },
+  fusion:        { bg: '#F0DBCF', palette: ['#8B1E3F', '#2B5D4A', '#E8A835', '#9E8CA8', '#C87D5A'], style: 'fields' },
 }
 
 function hashString(str) {
@@ -53,7 +49,6 @@ function getConfig(cuisine) {
 }
 
 function drawFields(ctx, rand, cfg, w, h) {
-  // Large wavy color fields overlapping – oil painting feel
   ctx.fillStyle = cfg.bg
   ctx.fillRect(0, 0, w, h)
   const fields = 4 + Math.floor(rand() * 3)
@@ -81,13 +76,11 @@ function drawFields(ctx, rand, cfg, w, h) {
 function drawBotanical(ctx, rand, cfg, w, h) {
   ctx.fillStyle = cfg.bg
   ctx.fillRect(0, 0, w, h)
-  // Gradient base
   const grad = ctx.createLinearGradient(0, 0, w, h)
   grad.addColorStop(0, cfg.palette[0] + '30')
   grad.addColorStop(1, cfg.palette[1] + '20')
   ctx.fillStyle = grad
   ctx.fillRect(0, 0, w, h)
-  // Brush-stroke leaves
   const leaves = 8 + Math.floor(rand() * 10)
   for (let i = 0; i < leaves; i++) {
     ctx.save()
@@ -114,7 +107,6 @@ function drawBotanical(ctx, rand, cfg, w, h) {
 function drawTile(ctx, rand, cfg, w, h) {
   ctx.fillStyle = cfg.bg
   ctx.fillRect(0, 0, w, h)
-  // Voronoi-like mosaic approximation with grid jitter
   const cellSize = Math.min(w, h) / (3.5 + rand() * 2)
   const cols = Math.ceil(w / cellSize) + 1
   const rows = Math.ceil(h / cellSize) + 1
@@ -147,7 +139,6 @@ function drawTile(ctx, rand, cfg, w, h) {
 function drawWaves(ctx, rand, cfg, w, h) {
   ctx.fillStyle = cfg.bg
   ctx.fillRect(0, 0, w, h)
-  // Stacked horizontal wave bands
   const bands = 6 + Math.floor(rand() * 4)
   for (let i = 0; i < bands; i++) {
     const y0 = (i / bands) * h
@@ -172,7 +163,6 @@ function drawWaves(ctx, rand, cfg, w, h) {
 }
 
 function drawAccents(ctx, rand, cfg, w, h, count) {
-  // Ingredient dots
   for (let i = 0; i < count; i++) {
     const x = rand() * w
     const y = rand() * h
@@ -184,7 +174,6 @@ function drawAccents(ctx, rand, cfg, w, h, count) {
     ctx.arc(x, y, radius, 0, Math.PI * 2)
     ctx.fill()
   }
-  // Flowing lines
   const lines = 2 + Math.floor(rand() * 3)
   for (let i = 0; i < lines; i++) {
     const color = cfg.palette[Math.floor(rand() * cfg.palette.length)]
@@ -206,13 +195,12 @@ function drawAccents(ctx, rand, cfg, w, h, count) {
   ctx.globalAlpha = 1
 }
 
-export default function RecipeArt({ recipe, className = '', grainy = true }) {
+function ProceduralCanvas({ recipe, grainy = true }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const rect = canvas.getBoundingClientRect()
     const w = Math.max(rect.width, 1)
@@ -234,11 +222,9 @@ export default function RecipeArt({ recipe, className = '', grainy = true }) {
       default:          drawFields(ctx, rand, cfg, w, h);    break
     }
 
-    // Accents: density scales with ingredient count
     const accents = Math.min(Math.max(recipe.ingredients?.length ?? 6, 6), 40)
     drawAccents(ctx, rand, cfg, w, h, accents)
 
-    // Grainy overlay for painterly feel
     if (grainy) {
       ctx.globalAlpha = 0.08
       for (let i = 0; i < (w * h) / 60; i++) {
@@ -250,7 +236,6 @@ export default function RecipeArt({ recipe, className = '', grainy = true }) {
       ctx.globalAlpha = 1
     }
 
-    // Soft vignette
     const vgrad = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.7)
     vgrad.addColorStop(0, 'rgba(0,0,0,0)')
     vgrad.addColorStop(1, 'rgba(0,0,0,0.25)')
@@ -258,11 +243,21 @@ export default function RecipeArt({ recipe, className = '', grainy = true }) {
     ctx.fillRect(0, 0, w, h)
   }, [recipe.name, recipe.id, recipe.cuisine, recipe.ingredients?.length, grainy])
 
+  return <canvas ref={canvasRef} className="w-full h-full block" aria-hidden />
+}
+
+export default function RecipeArt({ recipe, className = '', grainy = true }) {
+  const Illustration = illustrationFor(recipe?.id)
+  if (Illustration) {
+    return (
+      <div className={`w-full h-full ${className}`}>
+        <Illustration />
+      </div>
+    )
+  }
   return (
-    <canvas
-      ref={canvasRef}
-      className={`w-full h-full block ${className}`}
-      aria-hidden
-    />
+    <div className={`w-full h-full ${className}`}>
+      <ProceduralCanvas recipe={recipe} grainy={grainy} />
+    </div>
   )
 }

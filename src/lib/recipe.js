@@ -7,11 +7,20 @@ export const CATEGORY_LABELS = {
 }
 
 export const CUISINE_LABELS = {
-  italienisch: 'Italienisch',
-  levante: 'Levante',
-  asiatisch: 'Asiatisch',
-  mediterran: 'Mediterran',
-  fusion: 'Fusion',
+  italienisch:     'Italienisch',
+  levante:         'Levante',
+  asiatisch:       'Asiatisch',
+  japanisch:       'Japanisch',
+  vietnamesisch:   'Vietnamesisch',
+  chinesisch:      'Chinesisch',
+  koreanisch:      'Koreanisch',
+  thailaendisch:   'Thailändisch',
+  indisch:         'Indisch',
+  mediterran:      'Mediterran',
+  griechisch:      'Griechisch',
+  franzoesisch:    'Französisch',
+  amerikanisch:    'Amerikanisch',
+  fusion:          'Fusion',
 }
 
 export const DEVICE_LABELS = {
@@ -21,6 +30,8 @@ export const DEVICE_LABELS = {
   dutch_oven: 'Dutch Oven',
   ofen: 'Ofen',
   pfanne: 'Pfanne',
+  wok: 'Wok',
+  topf: 'Topf',
 }
 
 export const CATEGORIES = Object.keys(CATEGORY_LABELS)

@@ -3,15 +3,24 @@ import * as THREE from 'three'
 import { useMotionFlags } from '../../lib/motion'
 
 export const FLUID_PALETTES = {
-  warm:         ['#E8A77C', '#C87D5A', '#C3D0AA', '#F0DBCF'],
-  italienisch:  ['#E89B6B', '#D4846A', '#A3B18A', '#F4E4C1'],
-  asiatisch:    ['#C8D4A0', '#D4BC7C', '#C87D5A', '#F5E9D5'],
-  levante:      ['#D4A67C', '#C4A05A', '#C4B087', '#F4E4C1'],
-  mediterran:   ['#A8BAC4', '#A3B18A', '#D4A67C', '#F5E9D5'],
-  fusion:       ['#C87D5A', '#A3B18A', '#9E8CA8', '#F0DBCF'],
-  sage:         ['#B8C4A0', '#C3D0AA', '#E8D5AB', '#F5EDD8'],
-  dusk:         ['#7D6591', '#C87D5A', '#A3B18A', '#2A2540'],
-  hearth:       ['#C87D5A', '#8B3E2F', '#E89B6B', '#1A1614'],
+  warm:            ['#E8A77C', '#C87D5A', '#C3D0AA', '#F0DBCF'],
+  italienisch:     ['#E89B6B', '#D4846A', '#A3B18A', '#F4E4C1'],
+  asiatisch:       ['#C8D4A0', '#D4BC7C', '#C87D5A', '#F5E9D5'],
+  japanisch:       ['#C94F4F', '#E8C197', '#3E5A3C', '#F5EDD8'],
+  vietnamesisch:   ['#7DB56E', '#E89B91', '#D4BC7C', '#F5F0E0'],
+  chinesisch:      ['#B73939', '#E8A835', '#1F3A2E', '#F4E4C1'],
+  koreanisch:      ['#D4564F', '#E8C197', '#5A7A47', '#F5E9D5'],
+  thailaendisch:   ['#C44735', '#E8A835', '#7DB56E', '#F0DBCF'],
+  indisch:         ['#E89735', '#C44735', '#C4A55A', '#F4E4C1'],
+  levante:         ['#D4A67C', '#C4A05A', '#C4B087', '#F4E4C1'],
+  mediterran:      ['#A8BAC4', '#A3B18A', '#D4A67C', '#F5E9D5'],
+  griechisch:      ['#5A8FBA', '#F5F0E0', '#A3B18A', '#E8A77C'],
+  franzoesisch:    ['#6B2E3E', '#D4A76A', '#E8D5AB', '#3E3A52'],
+  amerikanisch:    ['#7A3E2F', '#C87D5A', '#E8C197', '#2A1F1A'],
+  fusion:          ['#C87D5A', '#A3B18A', '#9E8CA8', '#F0DBCF'],
+  sage:            ['#B8C4A0', '#C3D0AA', '#E8D5AB', '#F5EDD8'],
+  dusk:            ['#7D6591', '#C87D5A', '#A3B18A', '#2A2540'],
+  hearth:          ['#C87D5A', '#8B3E2F', '#E89B6B', '#1A1614'],
 }
 
 export function paletteForCuisine(cuisine) {
@@ -98,7 +107,8 @@ const FRAGMENT = /* glsl */ `
     vec2 flow2 = vec2(
       fbm(uvAdv * 2.2 - vec2(t * 0.6, t * 0.3)),
       fbm(uvAdv * 2.2 - vec2(t * 0.4, -t * 0.5) + 9.1)
-    );
+    )
+    ;
     vec2 uvFinal = uvAdv + flow2 * 0.22;
 
     float n1 = smoothstep(-0.4, 0.6, fbm(uvFinal * 2.4 + vec2(t * 0.5, 0.0)));
@@ -133,7 +143,7 @@ export default function FluidMesh({
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    if (!fluidOn) return // motion off → fallback only
+    if (!fluidOn) return
     if (liveContexts >= MAX_CONTEXTS) return
 
     const testCanvas = document.createElement('canvas')
@@ -202,10 +212,7 @@ export default function FluidMesh({
     })
     ro.observe(container)
 
-    // Static render path (reduced motion): render once, no RAF loop
     if (!fluidAnimated) {
-      // Render a single snapshot at a semi-random time offset so different
-      // instances don't look identical
       uniforms.uTime.value = Math.random() * 50
       renderer.render(scene, camera)
       return () => {
