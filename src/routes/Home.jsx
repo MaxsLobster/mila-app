@@ -8,7 +8,12 @@ import {
   useEnsureCurrentWeek,
 } from '../db/hooks'
 import { DAY_LABELS_LONG } from '../lib/date'
-import { generateBriefing, generateJetztWichtig, greetingForHour } from '../lib/briefing'
+import {
+  generateBriefing,
+  generateJetztWichtig,
+  generateKuechenLage,
+  greetingForHour,
+} from '../lib/briefing'
 import BriefingCard from '../components/home/BriefingCard'
 import TodayTimeline from '../components/home/TodayTimeline'
 import JetztWichtig from '../components/home/JetztWichtig'
@@ -53,6 +58,14 @@ export default function Home() {
     [mittag, abend, today.day?.mode, openShopping, cubes, expiring]
   )
 
+  const kuechenLage = useMemo(
+    () => generateKuechenLage({
+      today: { mittag, abend },
+      cubes: cubes ?? [],
+    }),
+    [mittag, abend, cubes]
+  )
+
   return (
     <div className="space-y-5">
       <header>
@@ -72,7 +85,7 @@ export default function Home() {
         abend={abend}
       />
 
-      <JetztWichtig actions={actions} />
+      <JetztWichtig actions={actions} kuechenLage={kuechenLage} />
 
       <PlanB
         cubes={cubes ?? []}

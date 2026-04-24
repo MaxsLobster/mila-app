@@ -66,7 +66,7 @@ export default function FreezerBank({ cubes }) {
                 <button
                   key={s.name}
                   onClick={() => quickAdd(s.name, s.target)}
-                  className="text-xs px-2.5 py-1 bg-black/[0.03] hover:bg-terracotta/10 hover:text-terracotta border border-black/10 rounded-full transition"
+                  className="text-xs px-3 py-1.5 bg-black/[0.03] hover:bg-terracotta/10 hover:text-terracotta border border-black/10 rounded-full transition"
                 >
                   {s.name}
                 </button>
@@ -78,7 +78,7 @@ export default function FreezerBank({ cubes }) {
               name="name"
               required
               placeholder="Eigener Name (z. B. Linsen-Stew)"
-              className="flex-1 border border-black/10 rounded-lg px-3 py-2 text-[14px] focus:outline-none focus:border-terracotta/40"
+              className="flex-1 border border-black/10 rounded-lg px-3 py-2.5 text-[14px] focus:outline-none focus:border-terracotta/40"
             />
             <input
               type="number"
@@ -86,14 +86,15 @@ export default function FreezerBank({ cubes }) {
               defaultValue={6}
               min={1}
               max={20}
-              className="w-16 border border-black/10 rounded-lg px-2 py-2 text-[14px] text-center focus:outline-none focus:border-terracotta/40"
+              className="w-16 border border-black/10 rounded-lg px-2 py-2.5 text-[14px] text-center focus:outline-none focus:border-terracotta/40"
               aria-label="Ziel-Portionen"
             />
             <button
               type="submit"
-              className="bg-terracotta text-cream font-medium px-3 rounded-lg hover:brightness-95 transition"
+              className="bg-terracotta text-cream font-medium w-11 h-11 rounded-lg hover:brightness-95 transition flex items-center justify-center shrink-0"
+              aria-label="Anlegen"
             >
-              <Plus size={15} />
+              <Plus size={16} />
             </button>
           </form>
         </div>
@@ -133,9 +134,9 @@ function CubeRow({ cube }) {
   const pct = Math.min(100, (current / target) * 100)
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5">
-      <span className="w-9 h-9 rounded-xl bg-[#AABCC4]/25 text-[#2E5C7B] flex items-center justify-center shrink-0">
-        <Snowflake size={17} strokeWidth={2} />
+    <div className="flex items-center gap-3 px-4 py-4">
+      <span className="w-10 h-10 rounded-xl bg-[#AABCC4]/25 text-[#2E5C7B] flex items-center justify-center shrink-0">
+        <Snowflake size={18} strokeWidth={2} />
       </span>
 
       <div className="flex-1 min-w-0">
@@ -162,28 +163,28 @@ function CubeRow({ cube }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-1.5 shrink-0">
         <button
           onClick={handleMinus}
           disabled={current === 0}
-          className="w-8 h-8 rounded-full border border-black/10 hover:bg-black/5 disabled:opacity-30 flex items-center justify-center text-ink/65 transition"
+          className="w-11 h-11 rounded-full border border-black/10 hover:bg-black/5 disabled:opacity-30 flex items-center justify-center text-ink/65 transition"
           aria-label="Minus eine Portion"
         >
-          <Minus size={14} strokeWidth={2.5} />
+          <Minus size={16} strokeWidth={2.5} />
         </button>
         <button
           onClick={handlePlus}
-          className="w-8 h-8 rounded-full bg-terracotta/10 hover:bg-terracotta/20 text-terracotta flex items-center justify-center transition"
+          className="w-11 h-11 rounded-full bg-terracotta/10 hover:bg-terracotta/20 text-terracotta flex items-center justify-center transition"
           aria-label="Plus eine Portion"
         >
-          <Plus size={14} strokeWidth={2.5} />
+          <Plus size={16} strokeWidth={2.5} />
         </button>
         <button
           onClick={handleRemove}
-          className="w-8 h-8 rounded-full hover:bg-red-50 text-ink/30 hover:text-red-600 flex items-center justify-center transition ml-1"
+          className="w-10 h-10 rounded-full hover:bg-red-50 text-ink/35 hover:text-red-600 flex items-center justify-center transition ml-0.5"
           aria-label="Cube-Typ entfernen"
         >
-          <Trash2 size={13} />
+          <Trash2 size={14} />
         </button>
       </div>
     </div>
@@ -221,7 +222,7 @@ function EmptyBank({ onStart }) {
       </p>
       <button
         onClick={onStart}
-        className="mt-4 inline-flex items-center gap-1.5 bg-terracotta text-cream font-medium text-sm px-4 py-2 rounded-xl hover:brightness-95 transition"
+        className="mt-4 inline-flex items-center gap-1.5 bg-terracotta text-cream font-medium text-sm px-4 py-2.5 rounded-xl hover:brightness-95 transition"
       >
         <Plus size={14} /> Ersten Cube-Typ anlegen
       </button>

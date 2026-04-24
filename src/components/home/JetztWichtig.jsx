@@ -15,18 +15,39 @@ const ICON_TONES = {
   cube: 'bg-[#AABCC4]/25 text-[#2E5C7B]',
 }
 
-export default function JetztWichtig({ actions }) {
+const STATUS_STYLES = {
+  safe:           'bg-sage/15 text-ink/75 border-sage/25',
+  stabil:         'bg-sage/12 text-ink/75 border-sage/20',
+  improvisierbar: 'bg-amber-50 text-amber-900/85 border-amber-200/60',
+  dünn:           'bg-[#F0DBCF]/60 text-ink/75 border-terracotta/20',
+}
+
+export default function JetztWichtig({ actions, kuechenLage }) {
   if (!actions || actions.length === 0) {
     return (
       <section>
         <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">
-          Jetzt wichtig
+          Heute im Blick
         </h2>
-        <div className="bg-white rounded-2xl border border-black/5 p-5 flex items-center gap-3">
-          <span className="w-9 h-9 rounded-xl bg-sage/20 flex items-center justify-center shrink-0">
-            <span className="text-sage text-lg leading-none">✓</span>
-          </span>
-          <p className="text-[15px] text-ink/70 leading-tight">Nix dringendes. Entspann dich.</p>
+        <div className="bg-white rounded-2xl border border-black/5 p-5">
+          <div className="flex items-center gap-3">
+            <span className="w-9 h-9 rounded-xl bg-sage/20 flex items-center justify-center shrink-0">
+              <span className="text-sage text-lg leading-none">✓</span>
+            </span>
+            <p className="text-[15px] text-ink/75 leading-snug">
+              Alles ruhig. Du musst gerade nichts entscheiden.
+            </p>
+          </div>
+          {kuechenLage && (
+            <div
+              className={`mt-4 text-[13px] leading-relaxed rounded-xl border px-3.5 py-2.5 ${
+                STATUS_STYLES[kuechenLage.label] ?? STATUS_STYLES.safe
+              }`}
+            >
+              <span className="font-semibold">Küchenlage: {kuechenLage.label}.</span>{' '}
+              {kuechenLage.detail}
+            </div>
+          )}
         </div>
       </section>
     )
@@ -35,7 +56,7 @@ export default function JetztWichtig({ actions }) {
   return (
     <section>
       <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">
-        Jetzt wichtig
+        Heute im Blick
       </h2>
       <div className="bg-white rounded-2xl border border-black/5 divide-y divide-black/5 overflow-hidden">
         {actions.map((action, i) => {

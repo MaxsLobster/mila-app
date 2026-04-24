@@ -33,14 +33,6 @@ function shortIngredientList(items, max = 2) {
 
 /**
  * Generates a Mila-style briefing based on current state.
- * Inputs are the already-resolved data the caller has.
- *
- * @param {Object} ctx
- * @param {Object} ctx.today           - { mittag, abend, mode } recipe objects (or null)
- * @param {Array}  ctx.openShopping    - open shopping items
- * @param {Array}  ctx.cubes           - freezer cubes
- * @param {Array}  ctx.expiring        - pantry items expiring ≤ 3 days
- * @returns {{ tone, title, body, prefix }}
  */
 export function generateBriefing({ today = {}, openShopping = [], cubes = [], expiring = [] }) {
   const { mittag, abend, mode } = today
@@ -52,7 +44,6 @@ export function generateBriefing({ today = {}, openShopping = [], cubes = [], ex
 
   const cubePortions = totalCubePortions(cubes)
 
-  // Filter shopping items that match today's recipe ingredients
   const todayIngredients = new Set(
     [mittag, abend]
       .filter(Boolean)
@@ -66,9 +57,6 @@ export function generateBriefing({ today = {}, openShopping = [], cubes = [], ex
 
   const urgentExpiring = expiring.filter((e) => (e.daysLeft ?? 99) <= 2)
 
-  // ─── Cascade ───
-
-  // 1. Plan fehlt komplett
   if (planEmpty) {
     if (cubePortions === 0) {
       return {
@@ -87,9 +75,7 @@ export function generateBriefing({ today = {}, openShopping = [], cubes = [], ex
     }
   }
 
-  // 2. Plan komplett
   if (planComplete) {
-    // Urgent shopping that blocks today's cooking
     if (missingForToday.length > 0) {
       const missingText = shortIngredientList(missingForToday)
       const dish = mode === 'from_prep' ? nameOnly(abend) : (nameOnly(abend) ?? nameOnly(mittag))
@@ -101,7 +87,6 @@ export function generateBriefing({ today = {}, openShopping = [], cubes = [], ex
       }
     }
 
-    // Dringend ablaufend
     if (urgentExpiring.length > 0) {
       return {
         tone: TONES.info,
@@ -111,7 +96,6 @@ export function generateBriefing({ today = {}, openShopping = [], cubes = [], ex
       }
     }
 
-    // Freezer dünn trotz guten Plans
     if (cubePortions < 4) {
       return {
         tone: TONES.good,
@@ -121,7 +105,6 @@ export function generateBriefing({ today = {}, openShopping = [], cubes = [], ex
       }
     }
 
-    // Alles rund
     if (mode === 'from_prep') {
       return {
         tone: TONES.good,
@@ -146,7 +129,6 @@ export function generateBriefing({ today = {}, openShopping = [], cubes = [], ex
     }
   }
 
-  // 3. Plan nur teilweise
   const setMeal = hasMittag ? 'Mittag' : 'Abend'
   const setRecipe = hasMittag ? mittag : abend
   const openMeal = hasMittag ? 'Abend' : 'Mittag'
@@ -160,13 +142,12 @@ export function generateBriefing({ today = {}, openShopping = [], cubes = [], ex
 }
 
 /**
- * Generates a "Jetzt wichtig" action list – 1 to 3 items, prioritized.
+ * „Heute im Blick" – max 3 priorisierte Items. Bewusst ruhig formuliert.
  */
 export function generateJetztWichtig({ today = {}, openShopping = [], cubes = [], expiring = [] }) {
   const actions = []
   const { mittag, abend, mode } = today
 
-  // 1. Shopping items needed today
   const todayIngredients = new Set(
     [mittag, abend]
       .filter(Boolean)
@@ -186,7 +167,6 @@ export function generateJetztWichtig({ today = {}, openShopping = [], cubes = []
     })
   }
 
-  // 2. Expiring urgently (≤2 days)
   const urgent = expiring.filter((e) => (e.daysLeft ?? 99) <= 2)
   if (urgent.length > 0) {
     actions.push({
@@ -197,7 +177,6 @@ export function generateJetztWichtig({ today = {}, openShopping = [], cubes = []
     })
   }
 
-  // 3. Vorbereitung: Abends from_prep → rausnehmen
   if (mode === 'from_prep' && abend) {
     actions.push({
       icon: 'thaw',
@@ -207,7 +186,6 @@ export function generateJetztWichtig({ today = {}, openShopping = [], cubes = []
     })
   }
 
-  // 4. Cubes low overall
   const cubeTotal = totalCubePortions(cubes)
   if (cubeTotal < 3) {
     actions.push({
@@ -218,7 +196,6 @@ export function generateJetztWichtig({ today = {}, openShopping = [], cubes = []
     })
   }
 
-  // 5. Open shopping (non-urgent, general reminder)
   if (actions.length < 3 && openShopping.length > 0 && needed.length === 0) {
     actions.push({
       icon: 'shopping',
@@ -229,4 +206,35 @@ export function generateJetztWichtig({ today = {}, openShopping = [], cubes = []
   }
 
   return actions.slice(0, 3)
+}
+
+/**
+ * „Küchenlage" – ein beruhigendes Zwei-Wort-Status-Signal für die Home,
+ * wenn „Heute im Blick" leer ist.
+ *
+ * Rückgabe:
+ *   label:   'safe' | 'stabil' | 'improvisierbar' | 'dünn'
+ *   detail:  kurzer, warmer Halbsatz zur Situation
+ */
+export function generateKuechenLage({ today = {}, cubes = [] }) {
+  const hasMittag = Boolean(today.mittag)
+  const hasAbend = Boolean(today.abend)
+  const planComplete = hasMittag && hasAbend
+  const hasAnyPlan = hasMittag || hasAbend
+  const cubePortions = totalCubePortions(cubes)
+  const cubesOkay = cubePortions >= 4
+
+  if (planComplete && cubesOkay) {
+    return { label: 'safe', detail: 'Plan steht, Freezer ist okay.' }
+  }
+  if (planComplete) {
+    return { label: 'stabil', detail: 'Plan steht. Freezer wird dünn, aber heute reicht\'s.' }
+  }
+  if (cubesOkay) {
+    return {
+      label: 'improvisierbar',
+      detail: hasAnyPlan ? 'Teilplan, aber Freezer fängt auf.' : 'Freezer rettet den Abend.',
+    }
+  }
+  return { label: 'dünn', detail: 'Heute lieber einfach halten.' }
 }

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Plus, Search, Star, Baby } from 'lucide-react'
 import { useAllRecipes } from '../db/hooks'
 import { CATEGORY_LABELS, CATEGORIES } from '../lib/recipe'
@@ -8,10 +8,22 @@ import FilterChips from '../components/recipe/FilterChips'
 
 export default function Rezepte() {
   const recipes = useAllRecipes()
+  const [searchParams] = useSearchParams()
+  const urlCategory = searchParams.get('category')
+
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState(null)
+  const [category, setCategory] = useState(() =>
+    urlCategory && CATEGORIES.includes(urlCategory) ? urlCategory : null
+  )
   const [onlyFav, setOnlyFav] = useState(false)
   const [onlyValerie, setOnlyValerie] = useState(false)
+
+  // React to URL changes (e.g. Plan-B click while Rezepte is already open)
+  useEffect(() => {
+    if (urlCategory && CATEGORIES.includes(urlCategory)) {
+      setCategory(urlCategory)
+    }
+  }, [urlCategory])
 
   const filtered = useMemo(() => {
     if (!recipes) return null
@@ -43,7 +55,6 @@ export default function Rezepte() {
         </Link>
       </header>
 
-      {/* Search */}
       <div className="relative">
         <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40" />
         <input
@@ -55,16 +66,13 @@ export default function Rezepte() {
         />
       </div>
 
-      {/* Category chips */}
       <FilterChips options={categoryOptions} value={category} onChange={setCategory} />
 
-      {/* Toggles */}
       <div className="flex gap-2">
         <ToggleBtn active={onlyFav} onClick={() => setOnlyFav((v) => !v)} icon={Star} label="Favoriten" />
         <ToggleBtn active={onlyValerie} onClick={() => setOnlyValerie((v) => !v)} icon={Baby} label="Valerie" />
       </div>
 
-      {/* Grid */}
       {filtered === null ? (
         <SkeletonGrid />
       ) : filtered.length === 0 ? (

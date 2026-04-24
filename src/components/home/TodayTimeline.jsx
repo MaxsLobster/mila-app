@@ -6,8 +6,6 @@ import { formatTime } from '../../lib/recipe'
 export default function TodayTimeline({ dayKey, day, mittag, abend, weekKey }) {
   const mode = day?.mode
   const modeConf = mode ? DAY_MODES[mode] : null
-
-  // Vorbereitungs-Hint Logic
   const prep = computePrepHint({ mode, mittag, abend })
 
   return (
@@ -68,7 +66,7 @@ function Row({ icon: Icon, label, recipe, href, hasPlan }) {
         ) : hasPlan ? (
           <p className="italic text-[15px] text-ink/45 leading-tight mt-0.5">Rezept gelöscht</p>
         ) : (
-          <p className="italic text-[15px] text-ink/45 leading-tight mt-0.5">Vorschlag fehlt</p>
+          <p className="italic text-[15px] text-ink/45 leading-tight mt-0.5">Noch offen</p>
         )}
         {recipe && (
           <p className="text-xs text-ink/50 mt-0.5">{formatTime(recipe.time_min)} · {recipe.portions} Portionen</p>
@@ -80,14 +78,12 @@ function Row({ icon: Icon, label, recipe, href, hasPlan }) {
 }
 
 function computePrepHint({ mode, mittag, abend }) {
-  // Abends aus Prep → morgens portionieren
   if (mode === 'from_prep' && abend) {
     return {
       title: 'Portion aus Freezer rausnehmen',
       sub: `Für ${abend.name} heute Abend auftauen`,
     }
   }
-  // Wenn morgen ein Kochtag wäre und frisches Fleisch nötig — grob erkannt via Zutatenliste
   const checkName = (recipe) => {
     if (!recipe?.ingredients) return false
     return recipe.ingredients.some((i) =>
