@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { useMotionFlags } from '../../lib/motion'
 
 export const FLUID_PALETTES = {
   warm:         ['#E8A77C', '#C87D5A', '#C3D0AA', '#F0DBCF'],
@@ -10,7 +11,7 @@ export const FLUID_PALETTES = {
   fusion:       ['#C87D5A', '#A3B18A', '#9E8CA8', '#F0DBCF'],
   sage:         ['#B8C4A0', '#C3D0AA', '#E8D5AB', '#F5EDD8'],
   dusk:         ['#7D6591', '#C87D5A', '#A3B18A', '#2A2540'],
-  hearth:       ['#C87D5A', '#8B3E2F', '#E89B6B', '#1A1614'],  // dark for cook-mode
+  hearth:       ['#C87D5A', '#8B3E2F', '#E89B6B', '#1A1614'],
 }
 
 export function paletteForCuisine(cuisine) {
@@ -25,10 +26,8 @@ const VERTEX = /* glsl */ `
   }
 `
 
-// Simplex noise + multi-layered advection = looks like fluid without running a full sim.
 const FRAGMENT = /* glsl */ `
   precision highp float;
-
   uniform float uTime;
   uniform vec2  uMouse;
   uniform float uMouseStrength;
@@ -37,7 +36,6 @@ const FRAGMENT = /* glsl */ `
   uniform vec3  uColor2;
   uniform vec3  uColor3;
   uniform vec3  uColor4;
-
   varying vec2 vUv;
 
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -70,7 +68,6 @@ const FRAGMENT = /* glsl */ `
     return 130.0 * dot(m, g);
   }
 
-  // Fractal brownian motion
   float fbm(vec2 p) {
     float v = 0.0;
     float a = 0.5;
@@ -86,49 +83,33 @@ const FRAGMENT = /* glsl */ `
     float aspect = uResolution.x / max(uResolution.y, 1.0);
     vec2 uv = vUv;
     vec2 uvA = vec2(uv.x * aspect, uv.y);
-
     float t = uTime * 0.18;
 
-    // Mouse force – pushes uv outward from mouse, exponentially with distance
     vec2 mouseUv = vec2(uMouse.x * aspect, uMouse.y);
     float dM = distance(uvA, mouseUv);
     float mouseField = exp(-dM * 3.2) * uMouseStrength;
     vec2  mouseForce = normalize(uvA - mouseUv + 0.0001) * mouseField * 0.35;
 
-    // Layer 1: slow large flow
     vec2 flow1 = vec2(
       fbm(uvA * 1.4 + vec2(t, t * 0.7)),
       fbm(uvA * 1.4 + vec2(-t * 0.9, t * 0.5) + 5.2)
     );
-
-    // Layer 2: advected by layer 1 (turbulent fluid feel)
     vec2 uvAdv = uvA + flow1 * 0.35 + mouseForce;
     vec2 flow2 = vec2(
       fbm(uvAdv * 2.2 - vec2(t * 0.6, t * 0.3)),
       fbm(uvAdv * 2.2 - vec2(t * 0.4, -t * 0.5) + 9.1)
     );
-
     vec2 uvFinal = uvAdv + flow2 * 0.22;
 
-    // Sample noise fields for color weights
-    float n1 = fbm(uvFinal * 2.4 + vec2(t * 0.5, 0.0));
-    float n2 = fbm(uvFinal * 2.0 - vec2(0.0, t * 0.4) + 3.3);
-    float n3 = fbm(uvFinal * 1.7 + vec2(t * 0.2, t * 0.3) + 7.7);
-    float n4 = fbm(uvFinal * 3.1 - vec2(t * 0.3, t * 0.6) + 12.0);
-
-    // Smoothstep to get more painterly boundaries
-    n1 = smoothstep(-0.4, 0.6, n1);
-    n2 = smoothstep(-0.4, 0.6, n2);
-    n3 = smoothstep(-0.4, 0.6, n3);
-    n4 = smoothstep(-0.4, 0.6, n4);
+    float n1 = smoothstep(-0.4, 0.6, fbm(uvFinal * 2.4 + vec2(t * 0.5, 0.0)));
+    float n2 = smoothstep(-0.4, 0.6, fbm(uvFinal * 2.0 - vec2(0.0, t * 0.4) + 3.3));
+    float n3 = smoothstep(-0.4, 0.6, fbm(uvFinal * 1.7 + vec2(t * 0.2, t * 0.3) + 7.7));
+    float n4 = smoothstep(-0.4, 0.6, fbm(uvFinal * 3.1 - vec2(t * 0.3, t * 0.6) + 12.0));
 
     float total = n1 + n2 + n3 + n4 + 0.001;
     vec3 col = (uColor1 * n1 + uColor2 * n2 + uColor3 * n3 + uColor4 * n4) / total;
-
-    // Subtle inner glow near mouse
     col = mix(col, col * 1.25 + vec3(0.04), mouseField);
 
-    // Film-grain-ish noise for texture
     float grain = (snoise(vUv * uResolution.xy * 0.8 + t * 50.0)) * 0.03;
     col += grain;
 
@@ -137,7 +118,7 @@ const FRAGMENT = /* glsl */ `
 `
 
 let liveContexts = 0
-const MAX_CONTEXTS = 6   // be kind to low-end devices
+const MAX_CONTEXTS = 6
 
 export default function FluidMesh({
   variant = 'warm',
@@ -146,31 +127,22 @@ export default function FluidMesh({
   className = '',
   intensity = 1.0,
 }) {
+  const { fluidAnimated, fluidOn } = useMotionFlags()
   const containerRef = useRef(null)
-  const stateRef = useRef({})
 
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
+    if (!fluidOn) return // motion off → fallback only
+    if (liveContexts >= MAX_CONTEXTS) return
 
-    // Context limit guard
-    if (liveContexts >= MAX_CONTEXTS) {
-      container.dataset.fluidFallback = '1'
-      return
-    }
-
-    // WebGL support check
     const testCanvas = document.createElement('canvas')
     const gl = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl')
-    if (!gl) {
-      container.dataset.fluidFallback = '1'
-      return
-    }
+    if (!gl) return
 
     liveContexts++
 
     const palette = (colors ?? FLUID_PALETTES[variant] ?? FLUID_PALETTES.warm).map(c => new THREE.Color(c))
-
     const rect = container.getBoundingClientRect()
     const width = Math.max(rect.width, 1)
     const height = Math.max(rect.height, 1)
@@ -195,17 +167,14 @@ export default function FluidMesh({
       uColor4:        { value: palette[3] ?? palette[0] },
     }
 
-    const material = new THREE.ShaderMaterial({
-      uniforms,
-      vertexShader: VERTEX,
-      fragmentShader: FRAGMENT,
-    })
+    const material = new THREE.ShaderMaterial({ uniforms, vertexShader: VERTEX, fragmentShader: FRAGMENT })
     const geometry = new THREE.PlaneGeometry(2, 2)
     const mesh = new THREE.Mesh(geometry, material)
     scene.add(mesh)
 
     const target = { x: 0.5, y: 0.5, strength: 0 }
     const current = { x: 0.5, y: 0.5, strength: 0 }
+    const allowInteractive = interactive && fluidAnimated
 
     function onPointer(e) {
       const r = container.getBoundingClientRect()
@@ -215,7 +184,7 @@ export default function FluidMesh({
     }
     function onLeave() { target.strength = 0 }
 
-    if (interactive) {
+    if (allowInteractive) {
       container.addEventListener('pointermove', onPointer)
       container.addEventListener('pointerleave', onLeave)
       container.addEventListener('touchmove', (e) => {
@@ -233,15 +202,31 @@ export default function FluidMesh({
     })
     ro.observe(container)
 
+    // Static render path (reduced motion): render once, no RAF loop
+    if (!fluidAnimated) {
+      // Render a single snapshot at a semi-random time offset so different
+      // instances don't look identical
+      uniforms.uTime.value = Math.random() * 50
+      renderer.render(scene, camera)
+      return () => {
+        ro.disconnect()
+        geometry.dispose()
+        material.dispose()
+        renderer.dispose()
+        if (renderer.domElement.parentElement === container) {
+          container.removeChild(renderer.domElement)
+        }
+        liveContexts = Math.max(0, liveContexts - 1)
+      }
+    }
+
     let raf = 0
     let last = performance.now()
-
     function tick(now) {
       const dt = Math.min((now - last) / 1000, 0.1)
       last = now
       uniforms.uTime.value += dt * intensity
 
-      // Ease toward target (spring-like)
       current.x += (target.x - current.x) * 0.12
       current.y += (target.y - current.y) * 0.12
       current.strength += (target.strength - current.strength) * 0.08
@@ -254,12 +239,10 @@ export default function FluidMesh({
     }
     raf = requestAnimationFrame(tick)
 
-    stateRef.current = { renderer, scene, material, geometry, ro }
-
     return () => {
       cancelAnimationFrame(raf)
       ro.disconnect()
-      if (interactive) {
+      if (allowInteractive) {
         container.removeEventListener('pointermove', onPointer)
         container.removeEventListener('pointerleave', onLeave)
       }
@@ -271,7 +254,9 @@ export default function FluidMesh({
       }
       liveContexts = Math.max(0, liveContexts - 1)
     }
-  }, [variant, colors, interactive, intensity])
+  }, [variant, colors, interactive, intensity, fluidAnimated, fluidOn])
+
+  const palette = colors ?? FLUID_PALETTES[variant] ?? FLUID_PALETTES.warm
 
   return (
     <div
@@ -279,7 +264,7 @@ export default function FluidMesh({
       className={`absolute inset-0 overflow-hidden ${className}`}
       aria-hidden
       style={{
-        background: `linear-gradient(135deg, ${(colors ?? FLUID_PALETTES[variant] ?? FLUID_PALETTES.warm).slice(0, 2).join(', ')})`,
+        background: `linear-gradient(135deg, ${palette.slice(0, 2).join(', ')})`,
       }}
     />
   )

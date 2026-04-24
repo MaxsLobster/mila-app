@@ -1,13 +1,13 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Trash2, Sparkles, BookOpen, ShoppingCart } from 'lucide-react'
+import { Plus, Trash2, Sparkles, BookOpen, ShoppingCart, RefreshCw } from 'lucide-react'
 import {
   useShoppingItems,
   addShoppingItem,
-  addShoppingItems,
   toggleShoppingItem,
   removeShoppingItem,
   clearCheckedShopping,
+  syncShoppingFromRecipes,
   useMealplan,
   useAllRecipes,
 } from '../db/hooks'
@@ -63,17 +63,19 @@ export default function Einkauf() {
     setNewItem('')
   }
 
-  async function handleGenerate() {
-    const generated = generateFromWeekplan(plan, recipesById)
-    if (generated.length === 0) {
+  async function handleSync() {
+    const aggregated = generateFromWeekplan(plan, recipesById)
+    if (aggregated.length === 0) {
       toast('Kein Rezept diese Woche – plane erst einen Tag.', { tone: 'info' })
       return
     }
-    const added = await addShoppingItems(generated)
-    toast(
-      added > 0 ? `${added} Artikel aus dem Wochenplan` : 'Alles schon auf der Liste',
-      { tone: added > 0 ? 'success' : 'info' }
-    )
+    const { added, updated, removed, kept } = await syncShoppingFromRecipes(aggregated)
+    const parts = []
+    if (added) parts.push(`${added} neu`)
+    if (updated) parts.push(`${updated} aktualisiert`)
+    if (removed) parts.push(`${removed} entfernt`)
+    const summary = parts.length ? parts.join(' · ') : 'alles schon aktuell'
+    toast(`Aus Wochenplan: ${summary}`, { tone: 'success' })
   }
 
   async function handleClearChecked() {
@@ -113,11 +115,11 @@ export default function Einkauf() {
 
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={handleGenerate}
+          onClick={handleSync}
           disabled={!plan || !recipes}
           className="flex items-center gap-2 bg-sage/10 text-ink border border-sage/25 font-medium px-3.5 py-2 rounded-xl hover:bg-sage/15 transition text-sm disabled:opacity-50"
         >
-          <Sparkles size={14} className="text-sage" strokeWidth={2.2} />
+          <RefreshCw size={14} className="text-sage" strokeWidth={2.2} />
           Aus Wochenplan
         </button>
         {checkedCount > 0 && (

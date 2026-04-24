@@ -1,228 +1,84 @@
-import { useNavigate, Link } from 'react-router-dom'
-import { Clock, ShoppingCart, Sparkles, Moon, Calendar } from 'lucide-react'
-import { useTodayMealplan, useRecipe, useShoppingItems, usePantryExpiring } from '../db/hooks'
-import { formatTime } from '../lib/recipe'
+import { useMemo } from 'react'
+import {
+  useTodayMealplan,
+  useRecipe,
+  useShoppingItems,
+  usePantryExpiring,
+  useFreezerCubes,
+  useEnsureCurrentWeek,
+} from '../db/hooks'
 import { DAY_LABELS_LONG } from '../lib/date'
-import { DAY_MODES } from '../lib/mealplan'
-import { LOCATION_LABELS, expiryTone, formatExpiry, toneClasses } from '../lib/pantry'
-import FluidMesh from '../components/ui/FluidMesh'
-import { navigateWithTransition, heroTransitionName, titleTransitionName } from '../lib/transition'
+import { generateBriefing, generateJetztWichtig, greetingForHour } from '../lib/briefing'
+import BriefingCard from '../components/home/BriefingCard'
+import TodayTimeline from '../components/home/TodayTimeline'
+import JetztWichtig from '../components/home/JetztWichtig'
+import PlanB from '../components/home/PlanB'
 
 export default function Home() {
+  useEnsureCurrentWeek()
+
   const now = new Date()
   const datum = now.toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })
+  const greeting = greetingForHour(now.getHours())
+
   const today = useTodayMealplan()
   const mittag = useRecipe(today.day?.mittag)
   const abend = useRecipe(today.day?.abend)
   const shopping = useShoppingItems()
   const expiring = usePantryExpiring(14)
+  const cubes = useFreezerCubes()
 
-  const primary = mittag || abend
-  const secondary = mittag && abend ? abend : null
+  const openShopping = useMemo(
+    () => (shopping ?? []).filter((i) => !i.checked),
+    [shopping]
+  )
 
-  const openShopping = shopping?.filter((i) => !i.checked) ?? []
-  const shoppingPreview = openShopping.slice(0, 3).map((i) => i.name).join(', ')
+  const briefing = useMemo(
+    () => generateBriefing({
+      today: { mittag, abend, mode: today.day?.mode },
+      openShopping,
+      cubes: cubes ?? [],
+      expiring: expiring ?? [],
+    }),
+    [mittag, abend, today.day?.mode, openShopping, cubes, expiring]
+  )
+
+  const actions = useMemo(
+    () => generateJetztWichtig({
+      today: { mittag, abend, mode: today.day?.mode },
+      openShopping,
+      cubes: cubes ?? [],
+      expiring: expiring ?? [],
+    }),
+    [mittag, abend, today.day?.mode, openShopping, cubes, expiring]
+  )
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5">
       <header>
         <p className="text-[11px] text-ink/50 uppercase tracking-[0.15em] font-semibold">
-          {DAY_LABELS_LONG[today.dayKey]}
+          {greeting} · {DAY_LABELS_LONG[today.dayKey]}
         </p>
-        <h1 className="text-[32px] md:text-4xl font-semibold tracking-tight mt-1 leading-none">{datum}</h1>
+        <h1 className="text-[30px] md:text-4xl font-semibold tracking-tight mt-1 leading-none">{datum}</h1>
       </header>
 
-      {/* Heute auf dem Plan */}
-      <section>
-        <div className="flex items-center justify-between mb-3 px-1">
-          <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold">
-            Heute auf dem Plan
-          </h2>
-          {today.day?.mode && (
-            <span className="text-[11px] font-medium px-2 py-0.5 bg-terracotta/10 text-terracotta rounded-full">
-              {DAY_MODES[today.day.mode].emoji} {DAY_MODES[today.day.mode].label}
-            </span>
-          )}
-        </div>
+      <BriefingCard briefing={briefing} />
 
-        {today.loading ? (
-          <div className="bg-white rounded-2xl border border-black/5 aspect-[16/10] animate-pulse" />
-        ) : primary ? (
-          <>
-            <TodayCard recipe={primary} slotLabel={mittag ? 'Mittag' : 'Abend'} />
-            {secondary && (
-              <Link
-                to={`/rezepte/${secondary.id}`}
-                className="mt-2 w-full bg-white rounded-2xl p-4 border border-black/5 flex items-center gap-3 hover:border-terracotta/30 transition"
-              >
-                <div className="w-10 h-10 rounded-xl bg-sage/15 flex items-center justify-center shrink-0">
-                  <Moon size={17} className="text-sage" strokeWidth={2} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] uppercase tracking-wider text-ink/50 font-semibold">Abends</p>
-                  <p className="font-medium leading-tight truncate">{secondary.name}</p>
-                </div>
-                <span className="text-ink/30">›</span>
-              </Link>
-            )}
-          </>
-        ) : (
-          <EmptyPlanCard />
-        )}
-      </section>
+      <TodayTimeline
+        dayKey={today.dayKey}
+        day={today.day}
+        weekKey={today.weekKey}
+        mittag={mittag}
+        abend={abend}
+      />
 
-      {expiring !== null && expiring.length > 0 && (
-        <section>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold">
-              Vorrat-Check
-            </h2>
-            <Link to="/vorrat" className="text-[11px] text-ink/40 hover:text-terracotta transition">
-              Alle →
-            </Link>
-          </div>
-          <div className="bg-white rounded-2xl border border-black/5 divide-y divide-black/5 overflow-hidden">
-            {expiring.slice(0, 3).map((item) => {
-              const tone = expiryTone(item.daysLeft)
-              return (
-                <div key={item.id} className="flex items-center justify-between px-5 py-3.5">
-                  <div className="min-w-0">
-                    <p className="font-medium leading-tight truncate">{item.name}</p>
-                    <p className="text-xs text-ink/50 mt-0.5">
-                      {LOCATION_LABELS[item.location]}
-                      {(item.amount || item.unit) && ` · ${[item.amount, item.unit].filter(Boolean).join(' ')}`}
-                    </p>
-                  </div>
-                  <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0 ${toneClasses(tone)}`}>
-                    {formatExpiry(item.daysLeft)}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-      )}
+      <JetztWichtig actions={actions} />
 
-      <section>
-        <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">
-          Noch einzukaufen
-        </h2>
-        <Link
-          to="/einkauf"
-          className="w-full bg-white rounded-2xl p-5 border border-black/5 flex items-center gap-4 hover:border-terracotta/30 transition"
-        >
-          <div className="w-11 h-11 bg-terracotta/10 rounded-xl flex items-center justify-center shrink-0">
-            <ShoppingCart size={20} className="text-terracotta" strokeWidth={2} />
-          </div>
-          <div className="flex-1 min-w-0">
-            {openShopping.length > 0 ? (
-              <>
-                <p className="font-medium">{openShopping.length} Artikel offen</p>
-                <p className="text-sm text-ink/55 truncate">{shoppingPreview}{openShopping.length > 3 ? ' …' : ''}</p>
-              </>
-            ) : (
-              <>
-                <p className="font-medium">Alles besorgt</p>
-                <p className="text-sm text-ink/55 truncate">Tipp für neue Artikel oder aus Wochenplan</p>
-              </>
-            )}
-          </div>
-          <span className="text-ink/30 text-xl leading-none">›</span>
-        </Link>
-      </section>
-
-      <section>
-        <button className="w-full bg-gradient-to-br from-terracotta/8 to-sage/10 rounded-2xl p-5 border border-terracotta/15 flex items-center gap-4 hover:from-terracotta/12 hover:to-sage/14 transition text-left">
-          <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-            <Sparkles size={20} className="text-terracotta" strokeWidth={2} />
-          </div>
-          <div className="flex-1">
-            <p className="font-medium">Was hab ich da?</p>
-            <p className="text-sm text-ink/60">Freestyle-Vorschlag aus Vorrat <span className="text-ink/40">(bald)</span></p>
-          </div>
-        </button>
-      </section>
-    </div>
-  )
-}
-
-function TodayCard({ recipe, slotLabel }) {
-  const navigate = useNavigate()
-
-  function openRecipe(e) {
-    e.preventDefault()
-    navigateWithTransition(navigate, `/rezepte/${recipe.id}`)
-  }
-
-  return (
-    <article className="bg-white rounded-2xl overflow-hidden border border-black/5 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
-      <a href={`#/rezepte/${recipe.id}`} onClick={openRecipe} className="block">
-        <div
-          className="aspect-[16/9] relative"
-          style={{ viewTransitionName: heroTransitionName(recipe.id) }}
-        >
-          <FluidMesh variant={recipe.cuisine} interactive intensity={1.1} />
-        </div>
-      </a>
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[11px] uppercase tracking-wider font-semibold text-ink/45 mb-1">{slotLabel}</p>
-            <h3
-              className="text-xl font-semibold leading-tight"
-              style={{ viewTransitionName: titleTransitionName(recipe.id) }}
-            >
-              {recipe.name}
-            </h3>
-            <div className="flex items-center gap-2 mt-2 text-sm text-ink/55">
-              <Clock size={14} strokeWidth={2.2} />
-              <span>{formatTime(recipe.time_min)}</span>
-              <span className="text-ink/30">·</span>
-              <span>{recipe.portions} Portionen</span>
-            </div>
-          </div>
-          {recipe.valerie_tauglich && (
-            <span className="text-[11px] font-medium px-2.5 py-1 bg-sage/20 text-ink/80 rounded-full shrink-0">
-              Valerie ✓
-            </span>
-          )}
-        </div>
-        <div className="flex gap-2 mt-5">
-          <a
-            href={`#/rezepte/${recipe.id}`}
-            onClick={openRecipe}
-            className="flex-1 bg-terracotta text-cream font-medium py-3 rounded-xl hover:brightness-95 transition text-center"
-          >
-            Rezept anzeigen
-          </a>
-          <Link
-            to={`/rezepte/${recipe.id}/kochen`}
-            className="px-4 py-3 border border-black/10 rounded-xl hover:bg-black/[0.03] transition text-sm font-medium text-ink/75"
-          >
-            Kochen
-          </Link>
-        </div>
-      </div>
-    </article>
-  )
-}
-
-function EmptyPlanCard() {
-  return (
-    <div className="bg-white rounded-2xl border border-black/5 p-8 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-terracotta/10 text-terracotta flex items-center justify-center mx-auto mb-4">
-        <Calendar size={24} strokeWidth={1.8} />
-      </div>
-      <p className="font-medium">Für heute ist nichts geplant</p>
-      <p className="text-sm text-ink/55 mt-1.5 mb-5 max-w-sm mx-auto">
-        Öffne die Wochenansicht und weise dem heutigen Tag ein Rezept zu.
-      </p>
-      <Link
-        to="/woche"
-        className="inline-block bg-terracotta text-cream font-medium px-5 py-2.5 rounded-xl hover:brightness-95 transition"
-      >
-        Zur Wochenansicht
-      </Link>
+      <PlanB
+        cubes={cubes ?? []}
+        weekKey={today.weekKey}
+        dayKey={today.dayKey}
+      />
     </div>
   )
 }

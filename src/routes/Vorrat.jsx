@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { useAllPantry, addPantryItem, removePantryItem } from '../db/hooks'
 import { LOCATIONS, LOCATION_LABELS } from '../lib/pantry'
+import { CUBE_CATEGORY } from '../lib/cubes'
 import PantryForm from '../components/pantry/PantryForm'
 import PantryItem from '../components/pantry/PantryItem'
+import FreezerBank from '../components/pantry/FreezerBank'
 import { useToast } from '../components/ui/Toast'
 
 export default function Vorrat() {
@@ -11,6 +13,13 @@ export default function Vorrat() {
   const [addOpen, setAddOpen] = useState(false)
   const all = useAllPantry()
   const toast = useToast()
+
+  const cubes = useMemo(() => {
+    if (!all) return []
+    return all
+      .filter((i) => i.category === CUBE_CATEGORY && i.location === 'freezer')
+      .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0))
+  }, [all])
 
   const counts = useMemo(() => {
     const c = { kuehlschrank: 0, freezer: 0, vorrat: 0 }
@@ -23,6 +32,8 @@ export default function Vorrat() {
     if (!all) return null
     return all
       .filter((i) => i.location === activeLocation)
+      // On the freezer tab, hide cube rows – they live in FreezerBank
+      .filter((i) => !(activeLocation === 'freezer' && i.category === CUBE_CATEGORY))
       .sort((a, b) => {
         if (!a.expires && !b.expires) return a.name.localeCompare(b.name, 'de')
         if (!a.expires) return 1
@@ -98,20 +109,33 @@ export default function Vorrat() {
         })}
       </div>
 
+      {/* Freezer Bank erscheint nur auf dem Freezer-Tab */}
+      {activeLocation === 'freezer' && <FreezerBank cubes={cubes} />}
+
+      {/* Regular items list */}
       {!visible ? (
         <SkeletonList />
       ) : visible.length === 0 ? (
-        <EmptyState location={activeLocation} onAdd={() => setAddOpen(true)} />
+        activeLocation === 'freezer' && cubes.length > 0 ? null : (
+          <EmptyState location={activeLocation} onAdd={() => setAddOpen(true)} />
+        )
       ) : (
-        <div className="bg-white rounded-2xl border border-black/5 divide-y divide-black/5 overflow-hidden">
-          {visible.map((item) => (
-            <PantryItem
-              key={item.id}
-              item={item}
-              onRemove={() => handleRemove(item.id, item.name)}
-            />
-          ))}
-        </div>
+        <section>
+          {activeLocation === 'freezer' && cubes.length > 0 && (
+            <h2 className="text-[11px] uppercase tracking-[0.15em] text-ink/50 font-semibold mb-3 px-1">
+              Sonstiges im Freezer
+            </h2>
+          )}
+          <div className="bg-white rounded-2xl border border-black/5 divide-y divide-black/5 overflow-hidden">
+            {visible.map((item) => (
+              <PantryItem
+                key={item.id}
+                item={item}
+                onRemove={() => handleRemove(item.id, item.name)}
+              />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   )

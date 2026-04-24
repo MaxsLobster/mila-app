@@ -65,7 +65,7 @@ export function parseManualInput(text) {
 }
 
 function formatAmount(ing) {
-  const amt = (ing.amount ?? '').trim()
+  const amt = (ing.amount ?? '').toString().trim()
   const unit = (ing.unit ?? '').trim()
   if (!amt && !unit) return ''
   if (!amt) return unit
@@ -73,22 +73,24 @@ function formatAmount(ing) {
   return `${amt} ${unit}`
 }
 
-function sumAmounts(existing, ing) {
-  const match = existing.match(/^([\d.,]+)\s*(.*)$/)
-  const newNum = parseFloat((ing.amount ?? '').replace(',', '.'))
-  if (match && !Number.isNaN(newNum)) {
-    const existingNum = parseFloat(match[1].replace(',', '.'))
-    const existingUnit = match[2].trim()
-    const newUnit = (ing.unit ?? '').trim()
-    if (!Number.isNaN(existingNum) && existingUnit === newUnit) {
-      const sum = Number((existingNum + newNum).toFixed(2))
-      return existingUnit ? `${sum} ${existingUnit}` : String(sum)
-    }
+function parseQuantity(amountStr) {
+  if (!amountStr) return { num: null, unit: '' }
+  const m = String(amountStr).match(/^\s*([\d.,]+)\s*(.*)$/)
+  if (!m) return { num: null, unit: String(amountStr).trim() }
+  const num = parseFloat(m[1].replace(',', '.'))
+  return { num: Number.isNaN(num) ? null : num, unit: (m[2] || '').trim() }
+}
+
+function combineAmounts(existingAmount, newAmount) {
+  const a = parseQuantity(existingAmount)
+  const b = parseQuantity(newAmount)
+  if (a.num !== null && b.num !== null && a.unit === b.unit) {
+    const sum = Number((a.num + b.num).toFixed(2))
+    return a.unit ? `${sum} ${a.unit}` : String(sum)
   }
-  const ingFormatted = formatAmount(ing)
-  if (!ingFormatted) return existing
-  if (!existing) return ingFormatted
-  return `${existing} + ${ingFormatted}`
+  if (!existingAmount) return newAmount
+  if (!newAmount) return existingAmount
+  return `${existingAmount} + ${newAmount}`
 }
 
 export function generateFromWeekplan(plan, recipesById) {
@@ -107,13 +109,14 @@ export function generateFromWeekplan(plan, recipesById) {
         if (!ing.name?.trim()) continue
         const key = ing.name.trim().toLowerCase()
         const existing = items.get(key)
+        const ingAmt = formatAmount(ing)
         if (existing) {
-          existing.amount = sumAmounts(existing.amount, ing)
+          existing.amount = combineAmounts(existing.amount, ingAmt)
           existing.recipeIds.add(recipeId)
         } else {
           items.set(key, {
             name: ing.name.trim(),
-            amount: formatAmount(ing),
+            amount: ingAmt,
             recipeIds: new Set([recipeId]),
           })
         }

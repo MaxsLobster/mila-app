@@ -1,12 +1,18 @@
 import Matter from 'matter-js'
 
-/**
- * Takes a DOM element, clones it as an overlay, and sends it tumbling off-screen
- * with real Matter.js physics (gravity, rotation, bounce against floor).
- * Returns a promise that resolves once the item is gone.
- */
+function isMotionEnabled() {
+  if (typeof document === 'undefined') return false
+  return document.documentElement.dataset.motion === 'full'
+}
+
 export function explodeElement(element, options = {}) {
   return new Promise((resolve) => {
+    // Motion off / reduced → skip the fancy animation
+    if (!isMotionEnabled()) {
+      resolve()
+      return
+    }
+
     const rect = element.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) { resolve(); return }
 
@@ -15,10 +21,9 @@ export function explodeElement(element, options = {}) {
       gravity = 1.4,
       bounce = 0.35,
       maxDuration = 2800,
-      shards = false,    // break into pieces (for "shatter" feel)
+      shards = false,
     } = options
 
-    // Container for visuals (above app UI)
     const container = document.createElement('div')
     container.style.cssText = `
       position: fixed;
@@ -29,12 +34,10 @@ export function explodeElement(element, options = {}) {
     `
     document.body.appendChild(container)
 
-    // Fade the original immediately (visual continuity)
     const originalOpacity = element.style.opacity
     element.style.transition = 'opacity 80ms linear'
     element.style.opacity = '0'
 
-    // Capture styling via clone
     const makeClone = () => {
       const clone = element.cloneNode(true)
       clone.style.cssText = `
@@ -52,15 +55,12 @@ export function explodeElement(element, options = {}) {
       return clone
     }
 
-    // Build physics
     const engine = Matter.Engine.create()
     engine.gravity.y = gravity
-    engine.gravity.scale = 0.0015   // tuned for screen pixels
+    engine.gravity.scale = 0.0015
 
     const W = window.innerWidth
     const H = window.innerHeight
-
-    // Floor ~ slightly below viewport so item drops off screen
     const floor = Matter.Bodies.rectangle(W / 2, H + 400, W * 2, 40, { isStatic: true })
     Matter.Composite.add(engine.world, floor)
 
@@ -68,7 +68,6 @@ export function explodeElement(element, options = {}) {
     const bodies = []
 
     if (shards) {
-      // Break into a 3×2 grid of pieces using canvas sprite
       const cols = 3, rows = 2
       const pw = rect.width / cols
       const ph = rect.height / rows
@@ -92,13 +91,8 @@ export function explodeElement(element, options = {}) {
             rect.left + c * pw + pw / 2,
             rect.top + r * ph + ph / 2,
             pw, ph,
-            {
-              restitution: bounce,
-              friction: 0.15,
-              density: 0.002,
-            }
+            { restitution: bounce, friction: 0.15, density: 0.002 }
           )
-          // Launch outward + upward
           Matter.Body.setVelocity(body, {
             x: direction * (2 + Math.random() * 5) + (c - (cols - 1) / 2) * 2,
             y: -6 - Math.random() * 4,
@@ -116,11 +110,7 @@ export function explodeElement(element, options = {}) {
         rect.left + rect.width / 2,
         rect.top + rect.height / 2,
         rect.width, rect.height,
-        {
-          restitution: bounce,
-          friction: 0.12,
-          density: 0.002,
-        }
+        { restitution: bounce, friction: 0.12, density: 0.002 }
       )
       Matter.Body.setVelocity(body, {
         x: direction * (3 + Math.random() * 4),
@@ -133,10 +123,8 @@ export function explodeElement(element, options = {}) {
 
     const start = performance.now()
     let raf = 0
-
     function tick(now) {
       Matter.Engine.update(engine, 16)
-
       let stillOnScreen = false
       for (let i = 0; i < bodies.length; i++) {
         const b = bodies[i]
@@ -147,7 +135,6 @@ export function explodeElement(element, options = {}) {
         clone.style.transform = `translate(${x}px, ${y}px) rotate(${b.angle}rad)`
         if (b.position.y < H + 200) stillOnScreen = true
       }
-
       if (!stillOnScreen || now - start > maxDuration) {
         cancelAnimationFrame(raf)
         container.remove()

@@ -4,17 +4,24 @@ import { Clock, Star } from 'lucide-react'
 import { CATEGORY_LABELS, formatTime } from '../../lib/recipe'
 import RecipeArt from '../ui/RecipeArt'
 import { navigateWithTransition, heroTransitionName, titleTransitionName } from '../../lib/transition'
+import { useMotionFlags } from '../../lib/motion'
 
 export default function RecipeCard({ recipe }) {
   const navigate = useNavigate()
   const cardRef = useRef(null)
+  const { tiltOn, transitionsOn } = useMotionFlags()
 
   function handleClick(e) {
     e.preventDefault()
-    navigateWithTransition(navigate, `/rezepte/${recipe.id}`)
+    if (transitionsOn) {
+      navigateWithTransition(navigate, `/rezepte/${recipe.id}`)
+    } else {
+      navigate(`/rezepte/${recipe.id}`)
+    }
   }
 
   function handlePointerMove(e) {
+    if (!tiltOn) return
     const el = cardRef.current
     if (!el) return
     const rect = el.getBoundingClientRect()
@@ -28,6 +35,7 @@ export default function RecipeCard({ recipe }) {
   }
 
   function handlePointerLeave() {
+    if (!tiltOn) return
     const el = cardRef.current
     if (!el) return
     el.style.setProperty('--tilt-x', '0deg')
@@ -42,7 +50,7 @@ export default function RecipeCard({ recipe }) {
       onClick={handleClick}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
-      className="card-tilt group bg-white rounded-2xl overflow-hidden border border-black/5 hover:border-terracotta/30 block relative"
+      className={`${tiltOn ? 'card-tilt' : ''} group bg-white rounded-2xl overflow-hidden border border-black/5 hover:border-terracotta/30 block relative`}
     >
       <div
         className="aspect-[4/3] relative overflow-hidden"
